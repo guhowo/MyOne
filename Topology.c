@@ -23,7 +23,7 @@ bool findUpstream(Address addr)
 {
 	upstreamAddress *tmp;
 	list_for_each_entry(tmp, &pupstreams->list, list) {
-		if(tmp->addr._a == addr._a)
+		if(tmp->addr == addr)
 			return true;
 	}
 	return false;
@@ -55,7 +55,7 @@ static void certificate_serialize(Buffer * buf, bool forSign){
 	append_uint64(buf, (uint64_t)CRepresentation._timestamp);
 	append_uint16(buf, (uint16_t)CRepresentation.repCount);
 	for(i = 0;i < CRepresentation.repCount; ++i){
-		address_appendTo(buf, &(CRepresentation.reps[i]));
+		Address_AppendTo(buf, CRepresentation.reps[i]);
 	}
 
 	if (!forSign) {
@@ -71,7 +71,7 @@ static void certificate_serialize(Buffer * buf, bool forSign){
 	}
 }
 
-unsigned int certificate_deserialize(CertificateOfRepresentation *cor,const unsigned char *data, unsigned int len,unsigned int startAt)
+unsigned int Certificate_Deserialize(CertificateOfRepresentation *cor,const unsigned char *data, unsigned int len,unsigned int startAt)
 {
 	memset(&cor,0,sizeof(cor));
 
@@ -84,7 +84,7 @@ unsigned int certificate_deserialize(CertificateOfRepresentation *cor,const unsi
 	unsigned int i;
 	for(i=0;i<rc;++i) {
 		if (i < ZT_CERTIFICATEOFREPRESENTATION_MAX_ADDRESSES)
-			address_setTo(data,ZT_ADDRESS_LENGTH,&cor->reps[i]);
+			Address_SetTo(data,ZT_ADDRESS_LENGTH,&cor->reps[i]);
 		p += ZT_ADDRESS_LENGTH;
 	}
 	cor->repCount = (rc > ZT_CERTIFICATEOFREPRESENTATION_MAX_ADDRESSES) ? ZT_CERTIFICATEOFREPRESENTATION_MAX_ADDRESSES : rc;
@@ -114,13 +114,13 @@ unsigned int certificate_deserialize(CertificateOfRepresentation *cor,const unsi
 void Certificate_sign(const Identity *myIdentity,const uint64_t ts)
 {
 	Buffer tmp;
-	Buffer_init(&tmp);
+	Buffer_Init(&tmp);
 	CRepresentation._timestamp = ts;
 	certificate_serialize(&tmp,true);
 	C25519_sign4(CRepresentation._signature, myIdentity->_privateKey, myIdentity->_publicKey, tmp.b, tmp.len);
 }
 
-void Topology_serialize(Buffer * buf, bool forSign)
+void Topology_Serialize(Buffer * buf, bool forSign)
 {
 	World *pTmpWorld = &(RR->pTopology->planet);
 	Roots *pTmpRoots = NULL;
@@ -146,11 +146,11 @@ void Topology_serialize(Buffer * buf, bool forSign)
 	
 	list_for_each_entry(pTmpRoots, &(pTmpWorld->roots.list), list){
 		rootNum++;
-		identity_serialize(&(pTmpRoots->root.identity), buf, false);
+		Identity_Serialize(&(pTmpRoots->root.identity), buf, false);
 		posEndpoint = buf->len++;
 		list_for_each_entry(pTmpInetAddr, &(pTmpRoots->root.stableEndpoints.list), list){
 			endpointNum++;
-			InetAddress_serialize(&(pTmpInetAddr->InetAddr), buf);
+			InetAddress_Serialize(&(pTmpInetAddr->InetAddr), buf);
 		}
 		buf->b[posEndpoint] = endpointNum;
 	}
@@ -164,7 +164,7 @@ void Topology_serialize(Buffer * buf, bool forSign)
 	}
 }
 
-unsigned int topology_deserialize(World *newWorld, Roots *newRootHead, const unsigned char *b,unsigned int startAt)
+unsigned int Topology_Deserialize(World *newWorld, Roots *newRootHead, const unsigned char *b,unsigned int startAt)
 {
 	unsigned int p = startAt;
 
@@ -192,7 +192,7 @@ unsigned int topology_deserialize(World *newWorld, Roots *newRootHead, const uns
 	unsigned int k;
 	for(k=0;k<numRoots;++k) {
 		Roots *r = (Roots *)malloc(sizeof(Roots));
-		p += identity_deserialize(&(r->root.identity),b,p);	//initialize root->identity
+		p += Identity_Deserialize(&(r->root.identity),b,p);	//initialize root->identity
 		unsigned int numStableEndpoints = b[p++];
 		if (numStableEndpoints > ZT_WORLD_MAX_STABLE_ENDPOINTS_PER_ROOT) {
 			printf("too many stable endpoints in World/Root\n");
@@ -202,7 +202,7 @@ unsigned int topology_deserialize(World *newWorld, Roots *newRootHead, const uns
 		INIT_LIST_HEAD(&r->root.stableEndpoints.list); 		//initialize roots list
 		for(kk=0;kk<numStableEndpoints;++kk) {
 			InetAddrList *iAddr = (InetAddrList *)malloc(sizeof(InetAddrList));
-			p += InetAddress_deserialize(&iAddr->InetAddr, b, p);
+			p += InetAddress_Deserialize(&iAddr->InetAddr, b, p);
 			r->root.stableEndpoints.InetAddr = iAddr->InetAddr;
 			list_add_tail(&(iAddr->list), &(r->root.stableEndpoints.list));
 		}
@@ -221,18 +221,18 @@ void memoizeUpstreams(World *world)
 	upstreamAddress *tmpStream = NULL;
 	
 	list_for_each_entry(tmp, &proots->list, list) {
-		if(idIsEqual(&tmp->root.identity, &RR->identity)) {
+		if(Identity_IsEqual(&tmp->root.identity, &RR->identity)) {
 			topy.amRoot = true;
 		} else if(!findUpstream(tmp->root.identity._address)) {
 			tmpStream = (upstreamAddress *)malloc(sizeof(upstreamAddress));
-			tmpStream->addr._a = tmp->root.identity._address._a; 
+			tmpStream->addr = tmp->root.identity._address; 
 			list_add_tail(&tmpStream->list, &pupstreams->list);
 			
 			if(!findPeer(tmp->root.identity._address)) {
 				PeerNode *tmpPeer = (PeerNode *)malloc(sizeof(PeerNode));
 				memset(tmpPeer, 0, sizeof(PeerNode));
-				tmpPeer->address._a = tmp->root.identity._address._a;
-				Peer_init(&tmpPeer->peer, &(tmp->root.identity));
+				tmpPeer->address = tmp->root.identity._address;
+				Peer_Init(&tmpPeer->peer, &(tmp->root.identity));
 				memcpy(&tmpPeer->id, &tmpPeer->peer.id, sizeof(Identity));
 				tmpPeer->pInetAddress = &tmp->root.stableEndpoints; //only for read,do not write
 				avl_insert(RR->addrTree, (void *)tmpPeer);
@@ -246,7 +246,7 @@ void memoizeUpstreams(World *world)
 
 	list_for_each_entry(tmpStream, &pupstreams->list, list) {
 		if (CRepresentation.repCount < ZT_CERTIFICATEOFREPRESENTATION_MAX_ADDRESSES) {
-			CRepresentation.reps[CRepresentation.repCount++]._a = tmpStream->addr._a;
+			CRepresentation.reps[CRepresentation.repCount++] = tmpStream->addr;
 			continue;
 		}
 		break;
@@ -257,7 +257,7 @@ void memoizeUpstreams(World *world)
 }
 
 
-bool addWorld(World *newWorld, bool alwaysAcceptNew)
+bool Topology_AddWorld(World *newWorld, bool alwaysAcceptNew)
 {
 	if ((newWorld->type != TYPE_PLANET)&&(newWorld->type != TYPE_MOON))
 			return false;
@@ -267,7 +267,7 @@ bool addWorld(World *newWorld, bool alwaysAcceptNew)
 	return true;
 }
 
-Peer *addPeer(Peer *peer)
+Peer *Topology_AddPeer(Peer *peer)
 {
 	PeerNode *np = NULL;
 	np = (PeerNode *)avl_locate(RR->addrTree, &peer->id._address);
@@ -286,24 +286,24 @@ Peer *addPeer(Peer *peer)
 	return &np->peer;
 }
 
-void init_topology(void)
+void Topology_Init(void)
 {	
 	RR->pTopology = &topy;
 	memset(&topy, 0, sizeof(topy));
 	pRoots = &(topy.planet.roots);
 	INIT_LIST_HEAD(&pRoots->list); 		//initialize roots list
 	
-	topology_deserialize(&(topy.planet), pRoots, ZT_DEFAULT_WORLD, 0);
+	Topology_Deserialize(&(topy.planet), pRoots, ZT_DEFAULT_WORLD, 0);
 	INIT_LIST_HEAD(&(pupstreams->list));
 	
-	addWorld(&(topy.planet), false);
+	Topology_AddWorld(&(topy.planet), false);
 }
 
-void Topology_appendCertificateOfRepresentation(Buffer * buf){
+void Topology_AppendCor(Buffer * buf){
 		certificate_serialize(buf, false);
 }
 
-Path *getPath(const InetAddress *local, const InetAddress *remote){
+Path *Topology_GetPath(const InetAddress *local, const InetAddress *remote){
 	Path *p = NULL;
 	PathKey key;
 
@@ -322,16 +322,16 @@ Path *getPath(const InetAddress *local, const InetAddress *remote){
 }
 
 
-bool shouldAcceptWorldUpdateFrom(const Address *addr)
+bool Topology_IsInUpstreams(const Address *addr)
 {	
 	if (findUpstream(*addr))
 		return true;
 	return false;
 }
 
-PeerNode *getPeerNodeByAddress(Address *addr){
+PeerNode *Topology_GetPeerNode(Address addr){
 	PeerNode * p = NULL;
-	p = avl_locate(RR->addrTree, (void *)addr);
+	p = avl_locate(RR->addrTree, (void *)&addr);
 	if(!p){
 		printf("get peernode by address failed\n");	
 		return NULL;

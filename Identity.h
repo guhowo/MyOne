@@ -28,21 +28,21 @@ typedef struct _identity{
  *
  * This is a time consuming operation.
  */
-Identity identity_generate(void);
+void Identity_Generate(Identity *id);
 
-void identity_serialize(Identity *identity, Buffer *buf, bool includePrivate);
-int identity_deserialize(Identity *id, const unsigned char *b, unsigned int startAt);
-bool Identity_fromString(const char *str, Identity *id);
-bool agree(const Identity *id,void *key,unsigned int klen);
-bool locallyValidate(Identity *id);
+void Identity_Serialize(Identity *identity, Buffer *buf, bool includePrivate);
+int Identity_Deserialize(Identity *id, const unsigned char *b, unsigned int startAt);
+bool Identity_FromString(const char *str, Identity *id);
+bool Identity_Agree(const Identity *id,void *key,unsigned int klen);
+bool Identity_LocallyValidate(Identity *id);
 
 /**
  * return true : two identities are the same
  * return false: two identities are different
  */
-static inline bool idIsEqual(Identity *ida, Identity *idb)
+static inline bool Identity_IsEqual(Identity *ida, Identity *idb)
 {
-	return ((ida->_address._a == idb->_address._a)&&(memcmp(ida->_publicKey, idb->_publicKey, 64)==0));
+	return ((ida->_address == idb->_address)&&(memcmp(ida->_publicKey, idb->_publicKey, 64)==0));
 }
 
 #endif

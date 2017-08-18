@@ -3,7 +3,7 @@
 #include "Packet.h"
 #include "Path.h"
 
-bool Path_send(Path *path,Buffer *buf,uint64_t now)
+bool Path_Send(Path *path,Buffer *buf,uint64_t now)
 {
 	if(udpSend((const struct sockaddr *)&(path->addr.address),buf)) {
 		path->lastOut = now;
@@ -32,7 +32,7 @@ void HashKey(uint64_t *key,const InetAddress *l,const InetAddress *r)
 	}
 }
 
-int Path_compare(void *newPath, void *oldPath)
+int Path_Compare(void *newPath, void *oldPath)
 {
 	uint64_t newKey[4] = {0};
 	uint64_t oldKey[4] = {0};

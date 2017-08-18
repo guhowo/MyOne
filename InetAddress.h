@@ -35,7 +35,7 @@ typedef struct _InetAddressList{
 }InetAddrList;
 
 
-static inline void InetAddress_serialize(const InetAddress *InetAddr, Buffer *buf)
+static inline void InetAddress_Serialize(const InetAddress *InetAddr, Buffer *buf)
 {
 	// This is used in the protocol and must be the same as describe in places
 	// like VERB_HELLO in Packet.hpp.
@@ -59,7 +59,7 @@ static inline void InetAddress_serialize(const InetAddress *InetAddr, Buffer *bu
 
 
 
-static inline unsigned int InetAddress_deserialize(InetAddress *InetAddr, const unsigned char *b, unsigned int startAt)
+static inline unsigned int InetAddress_Deserialize(InetAddress *InetAddr, const unsigned char *b, unsigned int startAt)
 {
 	unsigned int p = startAt;
 	switch(b[p++]) {

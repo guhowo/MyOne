@@ -12,30 +12,56 @@ const unsigned char ZERO_KEY[32] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 extern RuntimeEnvironment *RR;		//one.c
 extern 	int udp_sockd;
 
-void setAddress(Buffer *buf, const Address addr)
+void Packet_SetAddress(Buffer *buf, const Address addr)
 {
 	unsigned char *b = (unsigned char *)buf->b + buf->len;
-	*(b++) = (unsigned char)((addr._a >> 32) & 0xff);
-	*(b++) = (unsigned char)((addr._a >> 24) & 0xff);
-	*(b++) = (unsigned char)((addr._a >> 16) & 0xff);
-	*(b++) = (unsigned char)((addr._a >> 8) & 0xff);
-	*b = (unsigned char)(addr._a & 0xff);
+	*(b++) = (unsigned char)((addr >> 32) & 0xff);
+	*(b++) = (unsigned char)((addr >> 24) & 0xff);
+	*(b++) = (unsigned char)((addr >> 16) & 0xff);
+	*(b++) = (unsigned char)((addr >> 8) & 0xff);
+	*b = (unsigned char)(addr & 0xff);
 }
 		
-void packet(Buffer *buf, const Address dest, const Address source, const enum Verb v)
+void Packet(Buffer *buf, const Address dest, const Address source, const enum Verb v)
 {
 	getSecureRandom((void *)buf->b, 8);
 	buf->len += 8;
-	setAddress(buf, dest);
+	Packet_SetAddress(buf, dest);
 	buf->len += ZT_ADDRESS_LENGTH;
-	setAddress(buf, source);
+	Packet_SetAddress(buf, source);
 	buf->len += ZT_ADDRESS_LENGTH;
 	buf->b[ZT_PACKET_IDX_FLAGS] = 0; // zero flags and hops
 	buf->b[ZT_PACKET_IDX_VERB] = (char)v;		//setVerb()
 	buf->len = ZT_PACKET_IDX_VERB + 1;
 }
 
-void packet_armor(Buffer *buf, const void *key,bool encryptPayload,unsigned int counter)
+
+static void _salsa20MangleKey(Buffer *buf, const unsigned char *in,unsigned char *out)
+{
+	const unsigned char *d=buf->b;
+	const unsigned int len=buf->len;
+	// IV and source/destination addresses. Using the addresses divides the
+	// key space into two halves-- A->B and B->A (since order will change).
+	unsigned int i;
+	for(i=0;i<18;++i) // 8 + (ZT_ADDRESS_LENGTH * 2) == 18
+		out[i] = in[i] ^ d[i];
+
+	// Flags, but with hop count masked off. Hop count is altered by forwarding
+	// nodes. It's one of the only parts of a packet modifiable by people
+	// without the key.
+	out[18] = in[18] ^ (d[ZT_PACKET_IDX_FLAGS] & 0xf8);
+
+	// Raw packet size in bytes -- thus each packet size defines a new
+	// key space.
+	out[19] = in[19] ^ (unsigned char)(len & 0xff);
+	out[20] = in[20] ^ (unsigned char)((len >> 8) & 0xff); // little endian
+
+	// Rest of raw key is used unchanged
+	for(i=21;i<32;++i)
+		out[i] = in[i];
+}
+
+void Packet_Armor(Buffer *buf, const void *key,bool encryptPayload,unsigned int counter)
 {
 	encryptPayload = false;
 	uint8_t mangledKey[32];
@@ -45,7 +71,7 @@ void packet_armor(Buffer *buf, const void *key,bool encryptPayload,unsigned int 
 	data[7] = (data[7] & 0xf8) | (uint8_t)(counter & 0x07);
 
 	// Set flag now, since it affects key mangle function
-	setCipher(buf, encryptPayload ? ZT_PROTO_CIPHER_SUITE__C25519_POLY1305_SALSA2012 : ZT_PROTO_CIPHER_SUITE__C25519_POLY1305_NONE);
+	Packet_SetCipher(buf, encryptPayload ? ZT_PROTO_CIPHER_SUITE__C25519_POLY1305_SALSA2012 : ZT_PROTO_CIPHER_SUITE__C25519_POLY1305_NONE);
 	_salsa20MangleKey(buf,(const unsigned char *)key,mangledKey);
 	
 	Salsa20 s20;
@@ -63,19 +89,19 @@ void packet_armor(Buffer *buf, const void *key,bool encryptPayload,unsigned int 
 
 }
 
-unsigned int Packet_cipher(unsigned char *data)
+unsigned int Packet_Cipher(unsigned char *data)
 {
 	return (((unsigned int)data[ZT_PACKET_IDX_FLAGS] & 0x38) >> 3);
 }
 
-bool packet_dearmor(Buffer *buf, const void *key)
+bool Packet_Dearmor(Buffer *buf, const void *key)
 {
 	unsigned char *data=buf->b;
 	unsigned int dlen=buf->len;
 	uint8_t mangledKey[32];
 	const unsigned int payloadLen = dlen - ZT_PACKET_IDX_VERB;
 	unsigned char *const payload = data + ZT_PACKET_IDX_VERB;
-	const unsigned int cs = Packet_cipher(data);
+	const unsigned int cs = Packet_Cipher(data);
 	Salsa20 s20;
 	uint64_t macKey[4];
 	uint64_t mac[2];
@@ -118,16 +144,16 @@ int nodeWirePacketSendFunction(const struct sockaddr_storage *localAddr,const st
 void sendHELLO(Peer *peer, const InetAddress *localAddr,const InetAddress *atAddress,uint64_t _now,unsigned int counter)
 {	
 	Buffer outp;	//packet buffer
-	Buffer_init(&outp);
+	Buffer_Init(&outp);
 
-	packet(&outp, peer->id._address,RR->identity._address,VERB_HELLO);
+	Packet(&outp, peer->id._address,RR->identity._address,VERB_HELLO);
 	append(&outp, (unsigned char)ZT_PROTO_VERSION);
 	append(&outp, (unsigned char)ZEROTIER_ONE_VERSION_MAJOR);
 	append(&outp, (unsigned char)ZEROTIER_ONE_VERSION_MINOR);
 	append_uint16(&outp, (uint16_t)ZEROTIER_ONE_VERSION_REVISION);
 	append_uint64(&outp, _now);
-	identity_serialize(&RR->identity, &outp,false);
-	InetAddress_serialize(atAddress, &outp);
+	Identity_Serialize(&RR->identity, &outp,false);
+	InetAddress_Serialize(atAddress, &outp);
 
 	append_uint64(&outp, (uint64_t)RR->pTopology->planet.id);
 	append_uint64(&outp, (uint64_t)RR->pTopology->planet.ts);
@@ -137,15 +163,14 @@ void sendHELLO(Peer *peer, const InetAddress *localAddr,const InetAddress *atAdd
 	const unsigned int corSizeAt = outp.len;
 	
 	outp.len += 2;
-	Topology_appendCertificateOfRepresentation(&outp);
+	Topology_AppendCor(&outp);
 	setAt(&outp, corSizeAt, (uint16_t)(outp.len - (corSizeAt + 2)));
 	//RR->node->expectReplyTo(outp.packetId());
 	if (atAddress) {
-		packet_armor(&outp, peer->key,false,counter); // false == don't encrypt full payload, but add MAC
+		Packet_Armor(&outp, peer->key,false,counter); // false == don't encrypt full payload, but add MAC
 		nodeWirePacketSendFunction(&(localAddr->address), &(atAddress->address),&outp);
-		const char *tmp1 = InetAddress_toString(localAddr);
-		const char *tmp2 = InetAddress_toString(atAddress);
-		printf("(local: %s) (destination: %s): SEND(HELLO) \n",tmp1, tmp2);
+		const char *tmpAt = InetAddress_toString(atAddress);
+		printf("send(HELLO) to destination: %s\n",tmpAt);
 	} else {
 		//RR->sw->send(tPtr,outp,false); // false == don't encrypt full payload, but add MAC
 	}
@@ -179,7 +204,7 @@ const char *verbString(enum Verb v)
 }
 
 
-void cryptField(const void *key,unsigned int start,unsigned int len)
+void Packet_CryptField(const void *key,unsigned int start,unsigned int len)
 {
 	return;
 }

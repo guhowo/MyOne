@@ -5,17 +5,17 @@
 
 extern RuntimeEnvironment *RR;
 
-void Peer_init(Peer *p, Identity *peerId){
+void Peer_Init(Peer *p, Identity *peerId){
 	C25519_agree(RR->identity._privateKey, peerId->_publicKey, p->key, ZT_PEER_SECRET_KEY_LENGTH);
 	memcpy(&(p->id), peerId, sizeof(Identity));
 }
 
-Peer *getPeerByAddress(Address *addr)
+Peer *Peer_GotByAddress(Address addr)
 {
 	PeerNode * p = NULL;
-	p = avl_locate(RR->addrTree, (void *)addr);
+	p = avl_locate(RR->addrTree, (void *)&addr);
 	if(!p){
-		printf("get peer by address failed\n");	
+		printf("get peer by address failed.\n");	
 		return NULL;
 	}
 	printf("get peer by address successfully\n");	
@@ -98,11 +98,11 @@ void received(Peer *peer,	Path *path,const unsigned int hops,const uint64_t pack
 		if (!pathAlreadyKnown) {
 			PeerPath *potentialNewPeerPath = (PeerPath *)0;
 			if (path->addr.address.ss_family == AF_INET) {
-				if ((!peer->v4Path.p) || (!alive(peer->v4Path.p, now))) {
+				if ((!peer->v4Path.p) || (!Path_Alive(peer->v4Path.p, now))) {
 					potentialNewPeerPath = &peer->v4Path;
 				}
 			} else if (path->addr.address.ss_family == AF_INET6) {
-				if ((!peer->v6Path.p) || (!alive(peer->v6Path.p, now))) {
+				if ((!peer->v6Path.p) || (!Path_Alive(peer->v6Path.p, now))) {
 					potentialNewPeerPath = &peer->v6Path;
 				}
 			}
@@ -111,14 +111,14 @@ void received(Peer *peer,	Path *path,const unsigned int hops,const uint64_t pack
 					potentialNewPeerPath->lr = now;
 					potentialNewPeerPath->p = path;
 				} else {
-					printf("got %s via unknown path %s(%s), confirming...",verbString(verb),address_toString(&peer->id._address),InetAddress_toString(&path->addr));
+					printf("got %s via unknown path %s(%s), confirming...\n",verbString(verb),Address_ToString(peer->id._address),InetAddress_toString(&path->addr));
 					attemptToContactAt(peer,&path->localAddress,&path->addr,now,true,nextOutgoingCounter(path));
 					path->lastOut = now;
 				}
 			}
 		}
 
-	}else if(peer_trustEstablished(peer,now)){
+	}else if(Peer_TrustEstablished(peer,now)){
 		//need to do 
 	}
 		

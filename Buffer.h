@@ -63,7 +63,7 @@ static inline void setAt(Buffer *buf, unsigned int i,const uint16_t v)
 }
 
 
-static inline void Buffer_init(Buffer * b){
+static inline void Buffer_Init(Buffer * b){
 	b->len = 0;
 }
 

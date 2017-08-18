@@ -23,7 +23,7 @@ typedef struct _upstreamAddress_{
 typedef struct _MoonsList{
 	struct list_head list;
 	World moon;
-}MoonsList;
+}Moons;
 
 typedef struct _Peernode{
 	Address address;
@@ -32,17 +32,9 @@ typedef struct _Peernode{
 	InetAddrList *pInetAddress;		//readOnly
 }PeerNode;
 
-typedef struct _UpstreamsToContact{
-	struct list_head list;
-	Address ztAddr;
-	InetAddrList inetAddrs;
-}UpstreamsToContact;
-
-
 typedef struct _topology{
-//	RuntimeEnvironment RR;
 	World planet;
-	MoonsList moons;
+	Moons moons;
 	upstreamAddress upstreamAddresses;
 	bool amRoot;
 }Topology;
@@ -55,15 +47,20 @@ typedef struct _CertificateOfRepresentation{
 	Signature _signature;
 }CertificateOfRepresentation;
 
-void init_topology(void);
-unsigned int topology_deserialize(World *newWorld, Roots *newRoot, const unsigned char *b,unsigned int startAt);
-void Topology_serialize(Buffer * buf, bool forSign);
-bool addWorld(World *defaultPlanet,bool flag);
-Peer *addPeer(Peer *peer);
-PeerNode *getPeerNodeByAddress(Address *addr);
-void Topology_appendCertificateOfRepresentation(Buffer * buf);
-unsigned int certificate_deserialize(CertificateOfRepresentation *cor,const unsigned char *data, unsigned int len,unsigned int startAt);
-Path *getPath(const InetAddress *local, const InetAddress *remote);
-bool shouldAcceptWorldUpdateFrom(const Address *addr);
+void Topology_Init(void);
+unsigned int Topology_Deserialize(World *newWorld, Roots *newRoot, const unsigned char *b,unsigned int startAt);
+void Topology_Serialize(Buffer * buf, bool forSign);
+bool Topology_AddWorld(World *defaultPlanet,bool flag);
+Peer *Topology_AddPeer(Peer *peer);
+PeerNode *Topology_GetPeerNode(Address addr);
+
+/**
+ * @return Current certificate of representation (copy)
+ */
+void Topology_AppendCor(Buffer * buf);
+unsigned int Certificate_Deserialize(CertificateOfRepresentation *cor,const unsigned char *data, unsigned int len,unsigned int startAt);
+Path *Topology_GetPath(const InetAddress *local, const InetAddress *remote);
+bool Topology_IsInUpstreams(const Address *addr);
+
 
 #endif

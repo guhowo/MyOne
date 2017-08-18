@@ -12,4 +12,5 @@ typedef struct _RuntimeEnvironment{
 	TREE *pathsTree;
 	uint64_t now;
 }RuntimeEnvironment;
+
 #endif

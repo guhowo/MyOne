@@ -33,7 +33,7 @@ void myPoll(unsigned long timeout, int sockd, struct sockaddr_in addr)
 {
 	//char buf[131072];
 	Buffer buf;
-	Buffer_init(&buf);
+	Buffer_Init(&buf);
 	struct timeval tv;
 	fd_set rfds;
 	struct sockaddr_storage ss;
@@ -64,12 +64,12 @@ void myPoll(unsigned long timeout, int sockd, struct sockaddr_in addr)
 	return;
 }
 
-int address_cmp(void *insert, void *node){
+int Address_Compare(void *insert, void *node){
 	Address *i, *n;
 	i = (Address *)insert;
 	n = (Address *)node;
-	
-	return(memcmp(&i->_a,&n->_a, 8));
+
+	return memcmp(i,n,8);
 }
 
 void init(uint64_t _now){
@@ -78,15 +78,15 @@ void init(uint64_t _now){
 		printf("alloc RR failed\r\n");
 	}
 		
-	RR->addrTree = avl_tree_nodup(address_cmp);
-	RR->pathsTree = avl_tree_nodup(Path_compare);
+	RR->addrTree = avl_tree_nodup(Address_Compare);
+	RR->pathsTree = avl_tree_nodup(Path_Compare);
 	
-	if(!Identity_fromString(identity_secret, &(RR->identity))){
+	if(!Identity_FromString(identity_secret, &(RR->identity))){
 		printf("read id failed\n");
 		exit -1;
 	}
 
-	init_topology();
+	Topology_Init();
 }
 
 

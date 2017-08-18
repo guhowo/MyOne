@@ -31,7 +31,7 @@ void processBackgroundTasks(void *tptr,uint64_t _now,volatile uint64_t *nextBack
 		// Do pings and keepalives
 		memset(&localInetAddr,0,sizeof(InetAddress));
 		list_for_each_entry(pUpStream, &(RR->pTopology->upstreamAddresses.list), list){
-			peerNode = getPeerNodeByAddress(&(pUpStream->addr));
+			peerNode = Topology_GetPeerNode(pUpStream->addr);
 			if(!peerNode){
 				continue;
 			}

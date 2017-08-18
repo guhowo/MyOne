@@ -82,30 +82,28 @@ Pair *identity_generateSatisfying(Identity_generate_cond *cond)
 	return kp;
 }
 
-Identity identity_generate(void)
+void Identity_Generate(Identity *id)
 {
-	Identity id;
 	Identity_generate_cond *cond = NULL;
-	memset(&id, 0, sizeof(id));
+	memset(id, 0, sizeof(Identity));
 	memset(cond, 0, sizeof(cond));
 
 	Pair *kp = NULL;
 	do {
 		kp = identity_generateSatisfying(cond);
-		address_setTo(cond->digest + 59,ZT_ADDRESS_LENGTH, &(id._address)); // last 5 bytes are address
-	} while (address_isReserved(id._address._a));
+		Address_SetTo(cond->digest + 59,ZT_ADDRESS_LENGTH, &(id->_address)); // last 5 bytes are address
+	} while (Address_IsReserved(id->_address));
 
-	memcpy(id._publicKey, kp->pub, ZT_C25519_PUBLIC_KEY_LEN);
-	memcpy(id._privateKey, kp->priv, ZT_C25519_PRIVATE_KEY_LEN);
+	memcpy(id->_publicKey, kp->pub, ZT_C25519_PUBLIC_KEY_LEN);
+	memcpy(id->_privateKey, kp->priv, ZT_C25519_PRIVATE_KEY_LEN);
 
-	return id;
-	
+	return;
 }
 
 
-void identity_serialize(Identity *identity, Buffer *buf, bool includePrivate)
+void Identity_Serialize(Identity *identity, Buffer *buf, bool includePrivate)
 {
-	address_appendTo(buf, &identity->_address);
+	Address_AppendTo(buf, identity->_address);
 	append(buf, (uint8_t)0); // C25519/Ed25519 identity type
 	append_databylen(buf, identity->_publicKey,sizeof(identity->_publicKey));
 	if ((identity->_privateKey != NULL)&&(includePrivate)) {
@@ -116,12 +114,12 @@ void identity_serialize(Identity *identity, Buffer *buf, bool includePrivate)
 }
 
 
-int identity_deserialize(Identity *id, const unsigned char *b,unsigned int startAt)
+int Identity_Deserialize(Identity *id, const unsigned char *b,unsigned int startAt)
 {
 	memset(id->_privateKey, 0, sizeof(id->_privateKey));
 	unsigned int p = startAt;
 
-	address_setTo(&b[p], ZT_ADDRESS_LENGTH, &id->_address);
+	Address_SetTo(&b[p], ZT_ADDRESS_LENGTH, &id->_address);
 	p += ZT_ADDRESS_LENGTH;
 
 	if (b[p++] != 0) {
@@ -145,7 +143,7 @@ int identity_deserialize(Identity *id, const unsigned char *b,unsigned int start
 	return (p - startAt);
 }
 
-bool Identity_fromString(const char *str, Identity *id)
+bool Identity_FromString(const char *str, Identity *id)
 {
 	char *f = NULL;
 	if (!str)
@@ -159,8 +157,8 @@ bool Identity_fromString(const char *str, Identity *id)
 	for(f=strtok_r(tmp,":",&saveptr);(f);f=strtok_r((char *)0,":",&saveptr)) {
 		switch(fno++) {
 			case 0:
-				id->_address._a = strtoull(f,(char **)0,16) & 0xffffffffffULL;
-				if (address_isReserved(id->_address._a))
+				id->_address = strtoull(f,(char **)0,16) & 0xffffffffffULL;
+				if (Address_IsReserved(id->_address))
 					return false;
 				break;
 			case 1:
@@ -189,7 +187,7 @@ bool Identity_fromString(const char *str, Identity *id)
 /***************************************************************
 **Shortcut method to perform key agreement with another identity
 ***************************************************************/
-bool agree(const Identity *id,void *key,unsigned int klen) 
+bool Identity_Agree(const Identity *id,void *key,unsigned int klen) 
 {
 	if (RR->identity._privateKey) {
 		C25519_agree(RR->identity._privateKey,id->_publicKey,key,klen);
@@ -199,9 +197,9 @@ bool agree(const Identity *id,void *key,unsigned int klen)
 }
 
 
-bool locallyValidate(Identity *id)
+bool Identity_LocallyValidate(Identity *id)
 {
-	if (address_isReserved(id->_address._a))
+	if (Address_IsReserved(id->_address))
 		return false;
 
 	unsigned char digest[64];
@@ -209,7 +207,7 @@ bool locallyValidate(Identity *id)
 	_computeMemoryHardHash(id->_publicKey,64,digest,genmem);
 
 	unsigned char addrb[5];
-	address_copyTo(addrb, sizeof(addrb)/sizeof(unsigned char), &id->_address);
+	Address_CopyTo(addrb, sizeof(addrb), id->_address);
 
 	return (
 		(digest[0] < ZT_IDENTITY_GEN_HASHCASH_FIRST_BYTE_LESS_THAN)&&

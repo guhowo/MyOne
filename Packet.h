@@ -80,21 +80,21 @@ enum ErrorCode
 
 
 const char *verbString(enum Verb v);
-void packet(Buffer *buf, const Address dest, const Address source, const enum Verb v);
-void setAddress(Buffer *buf, const Address addr);
+void Packet(Buffer *buf, const Address dest, const Address source, const enum Verb v);
+void Packet_SetAddress(Buffer *buf, const Address addr);
 void sendHELLO(Peer *peer,const InetAddress *localAddr,const InetAddress *atAddress,uint64_t _now,unsigned int counter);
 bool udpSend(const struct sockaddr *remoteAddress,const Buffer *buf);
-void packet_armor(Buffer *buf, const void *key,bool encryptPayload,unsigned int counter);
-bool packet_dearmor(Buffer *buf, const void *key);
-void cryptField(const void *key,unsigned int start,unsigned int len);
-unsigned int Packet_cipher(unsigned char *data);
+void Packet_Armor(Buffer *buf, const void *key,bool encryptPayload,unsigned int counter);
+bool Packet_Dearmor(Buffer *buf, const void *key);
+void Packet_CryptField(const void *key,unsigned int start,unsigned int len);
+unsigned int Packet_Cipher(unsigned char *data);
 
 static inline unsigned int hops(unsigned char *data)
 {
 	return ((unsigned int)data[ZT_PACKET_IDX_FLAGS] & 0x07);
 }
 
-static inline void setCipher(Buffer *buf, unsigned int c)
+static inline void Packet_SetCipher(Buffer *buf, unsigned int c)
 {
 	unsigned char b = buf->b[ZT_PACKET_IDX_FLAGS];
 	b = (b & 0xc7) | (unsigned char)((c << 3) & 0x38); // bits: FFCCCHHH
@@ -105,29 +105,5 @@ static inline void setCipher(Buffer *buf, unsigned int c)
 	buf->b[ZT_PACKET_IDX_FLAGS] = b;
 }
 
-static void _salsa20MangleKey(Buffer *buf, const unsigned char *in,unsigned char *out)
-{
-	const unsigned char *d=buf->b;
-	const unsigned int len=buf->len;
-	// IV and source/destination addresses. Using the addresses divides the
-	// key space into two halves-- A->B and B->A (since order will change).
-	unsigned int i;
-	for(i=0;i<18;++i) // 8 + (ZT_ADDRESS_LENGTH * 2) == 18
-		out[i] = in[i] ^ d[i];
-
-	// Flags, but with hop count masked off. Hop count is altered by forwarding
-	// nodes. It's one of the only parts of a packet modifiable by people
-	// without the key.
-	out[18] = in[18] ^ (d[ZT_PACKET_IDX_FLAGS] & 0xf8);
-
-	// Raw packet size in bytes -- thus each packet size defines a new
-	// key space.
-	out[19] = in[19] ^ (unsigned char)(len & 0xff);
-	out[20] = in[20] ^ (unsigned char)((len >> 8) & 0xff); // little endian
-
-	// Rest of raw key is used unchanged
-	for(i=21;i<32;++i)
-		out[i] = in[i];
-}
 
 #endif

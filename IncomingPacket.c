@@ -36,87 +36,87 @@ bool _doHELLO(Path *path,Buffer *buf,const bool alreadyAuthenticated)
 	const uint64_t pid = Utils_ntoh_u64(*(uint64_t *)&data[0]);
 	Address fromAddress;
 	memset(&fromAddress,0,sizeof(fromAddress));
-	address_setTo(data+ZT_PACKET_IDX_SOURCE,ZT_ADDRESS_LENGTH,&fromAddress);
+	Address_SetTo(data+ZT_PACKET_IDX_SOURCE,ZT_ADDRESS_LENGTH,&fromAddress);
 	const unsigned int protoVersion = data[ZT_PROTO_VERB_HELLO_IDX_PROTOCOL_VERSION];
 	const unsigned int vMajor = data[ZT_PROTO_VERB_HELLO_IDX_MAJOR_VERSION];
 	const unsigned int vMinor = data[ZT_PROTO_VERB_HELLO_IDX_MINOR_VERSION];
 	const unsigned int vRevision = ntohs(*(uint16_t *)&data[ZT_PROTO_VERB_HELLO_IDX_REVISION]);
 	const uint64_t timestamp = Utils_ntoh_u64(*(uint64_t *)&data[ZT_PROTO_VERB_HELLO_IDX_TIMESTAMP]);
 	Identity id;
-	unsigned int ptr = ZT_PROTO_VERB_HELLO_IDX_IDENTITY + identity_deserialize(&id,data,ZT_PROTO_VERB_HELLO_IDX_IDENTITY);
+	unsigned int ptr = ZT_PROTO_VERB_HELLO_IDX_IDENTITY + Identity_Deserialize(&id,data,ZT_PROTO_VERB_HELLO_IDX_IDENTITY);
 
-	printf("_doHELLO, HELLO from %s(%s)\n",address_toString(&id._address),InetAddress_toString(&path->addr));
+	printf("_doHELLO, HELLO from %s(%s)\n",Address_ToString(id._address),InetAddress_toString(&path->addr));
 	if (protoVersion < ZT_PROTO_VERSION_MIN) {
-		printf("dropped HELLO from %s: protocol version too old\n",address_toString(&id._address));
+		printf("dropped HELLO from %s: protocol version too old\n",Address_ToString(id._address));
 		return true;
 	}
 
-	if (fromAddress._a != id._address._a) {
-		printf("dropped HELLO from %s: identity does not match packet source address\n",address_toString(&id._address));
+	if (fromAddress != id._address) {
+		printf("dropped HELLO from %s: identity does not match packet source address\n",Address_ToString(id._address));
 		return true;
 	}
 
-	Peer *peer = getPeerByAddress(&id._address);
+	Peer *peer = Peer_GotByAddress(id._address);
 	if (peer) {
 		// We already have an identity with this address -- check for collisions
 		if (!alreadyAuthenticated) {
-			if (!idIsEqual(&peer->id, &id)) {
+			if (!Identity_IsEqual(&peer->id, &id)) {
 				// Identity is different from the one we already have -- address collision	
 				// need Check rate limits, to do list	
 				uint8_t key[ZT_PEER_SECRET_KEY_LENGTH];
-				if (agree(&id,key,ZT_PEER_SECRET_KEY_LENGTH)) {
-					if (packet_dearmor(buf, key)) { // ensure packet is authentic, otherwise drop
-						printf("rejected HELLO from %s(%s): address already claimed\n",address_toString(&id._address),InetAddress_toString(&path->addr));
+				if (Identity_Agree(&id,key,ZT_PEER_SECRET_KEY_LENGTH)) {
+					if (Packet_Dearmor(buf, key)) { // ensure packet is authentic, otherwise drop
+						printf("rejected HELLO from %s(%s): address already claimed\n",Address_ToString(id._address),InetAddress_toString(&path->addr));
 						Buffer outp;
-						Buffer_init(&outp);
-						packet(&outp,id._address,RR->identity._address,VERB_ERROR);
+						Buffer_Init(&outp);
+						Packet(&outp,id._address,RR->identity._address,VERB_ERROR);
 						append(&outp, (unsigned char)VERB_HELLO);
 						append_uint64(&outp,(uint64_t)pid);
 						append(&outp,(uint8_t)ERROR_IDENTITY_COLLISION);
-						packet_armor(&outp,key,true,nextOutgoingCounter(path));
-						Path_send(path,&outp,RR->now);
+						Packet_Armor(&outp,key,true,nextOutgoingCounter(path));
+						Path_Send(path,&outp,RR->now);
 					} else {
-						printf("rejected HELLO from %s: packet failed authentication\n",address_toString(&id._address));
+						printf("rejected HELLO from %s: packet failed authentication\n",Address_ToString(id._address));
 					}
 				} else {
-					printf("rejected HELLO from (%s): key agreement failed\n",address_toString(&id._address));
+					printf("rejected HELLO from (%s): key agreement failed\n",Address_ToString(id._address));
 				}
 				return true;
 			} else {
 				// Identity is the same as the one we already have -- check packet integrity	
-				if (!packet_dearmor(buf, peer->key)) {
-					printf("rejected HELLO from %s: packet failed authentication\n",address_toString(&id._address));
+				if (!Packet_Dearmor(buf, peer->key)) {
+					printf("rejected HELLO from %s: packet failed authentication\n",Address_ToString(id._address));
 					return true;
 				}
 			}
 		}
 	}else {
 		if (alreadyAuthenticated) {
-			printf("dropped HELLO from %s: somehow already authenticated with unknown peer?\n",address_toString(&id._address));
+			printf("dropped HELLO from %s: somehow already authenticated with unknown peer?\n",Address_ToString(id._address));
 			return true;
 		}
 
 		// Check rate limits, need to do
 		
 		Peer newPeer;
-		Peer_init(&newPeer, &id);
-		if (!packet_dearmor(buf,newPeer.key)) {
-			printf("rejected HELLO from %s: packet failed authentication\n",address_toString(&id._address));
+		Peer_Init(&newPeer, &id);
+		if (!Packet_Dearmor(buf,newPeer.key)) {
+			printf("rejected HELLO from %s: packet failed authentication\n",Address_ToString(id._address));
 			return true;
 		}
 		
-		if (!locallyValidate(&id)) {
-			printf("dropped HELLO from %s: identity invalid\n",address_toString(&id._address));
+		if (!Identity_LocallyValidate(&id)) {
+			printf("dropped HELLO from %s: identity invalid\n",Address_ToString(id._address));
 			return true;
 		}
 
-		peer = addPeer(&newPeer);
+		peer = Topology_AddPeer(&newPeer);
 	}
 
 	// Get external surface address if present (was not in old versions)
 	InetAddress externalSurfaceAddress;
 	if (ptr < len) {
-		ptr += InetAddress_deserialize(&externalSurfaceAddress,data,ptr);
+		ptr += InetAddress_Deserialize(&externalSurfaceAddress,data,ptr);
 	}
 	
 	// Get primary planet world ID and world timestamp if present
@@ -131,7 +131,7 @@ bool _doHELLO(Path *path,Buffer *buf,const bool alreadyAuthenticated)
 
 	if (ptr < len) {
 		// Remainder of packet, if present, is encrypted
-		cryptField(peer->key,ptr,len - ptr);
+		Packet_CryptField(peer->key,ptr,len - ptr);
 	
 		// Get moon IDs and timestamps if present
 		if ((ptr + 2) <= len) {
@@ -157,8 +157,8 @@ bool _doHELLO(Path *path,Buffer *buf,const bool alreadyAuthenticated)
 	}
 
 	Buffer outp;
-	Buffer_init(&outp);
-	packet(&outp,id._address,RR->identity._address,VERB_OK);
+	Buffer_Init(&outp);
+	Packet(&outp,id._address,RR->identity._address,VERB_OK);
 	append(&outp,(unsigned char)VERB_HELLO);
 	append_uint64(&outp,(uint64_t)pid);
 	append_uint64(&outp,(uint64_t)timestamp);
@@ -168,7 +168,7 @@ bool _doHELLO(Path *path,Buffer *buf,const bool alreadyAuthenticated)
 	append_uint16(&outp,(uint16_t)ZEROTIER_ONE_VERSION_REVISION);
 
 	if(protoVersion >= 5) {
-		InetAddress_serialize(&path->addr, &outp);
+		InetAddress_Serialize(&path->addr, &outp);
 	} else {
 		printf("protoVersion %d is invalid\n", protoVersion);
 		return false;
@@ -177,17 +177,17 @@ bool _doHELLO(Path *path,Buffer *buf,const bool alreadyAuthenticated)
 	const unsigned int worldUpdateSizeAt = outp.len;
 	outp.len+=2; // make room for 16-bit size field
 	if ((planetWorldId)&&(RR->pTopology->planet.ts > planetWorldTimestamp)&&(planetWorldId == RR->pTopology->planet.id)) {
-		Topology_serialize(&outp,false);
+		Topology_Serialize(&outp,false);
 	}
 
 	setAt(&outp, worldUpdateSizeAt, (uint16_t)(outp.len - (worldUpdateSizeAt + 2)));
 	const unsigned int corSizeAt = outp.len;
 	outp.len += 2;
-	Topology_appendCertificateOfRepresentation(&outp);
+	Topology_AppendCor(&outp);
 	setAt(&outp,corSizeAt,(uint16_t)(outp.len - (corSizeAt + 2)));
 
-	packet_armor(&outp,peer->key,true,nextOutgoingCounter(path));
-	Path_send(path,&outp,now);	
+	Packet_Armor(&outp,peer->key,true,nextOutgoingCounter(path));
+	Path_Send(path,&outp,now);	
 	setRemoteVersion(peer,protoVersion,vMajor,vMinor,vRevision);
 	received(peer,path,hops(data),pid,VERB_HELLO,0,VERB_NOP,false);
 	
@@ -204,7 +204,7 @@ bool _doOK(Peer *peer,Path *path,Buffer *buf)
 	const uint64_t inRePacketId = Utils_ntoh_u64(*(uint64_t *)&data[ZT_PROTO_VERB_OK_IDX_IN_RE_PACKET_ID]);
 
 	if (!expectingReplyTo(inRePacketId)) {
-		printf("%s(%s): OK(%s) DROPPED: not expecting reply to %.16llx \n",address_toString(&peer->id._address),InetAddress_toString(&path->addr),verbString(inReVerb),inRePacketId);
+		printf("%s(%s): OK(%s) DROPPED: not expecting reply to %.16llx \n",Address_ToString(peer->id._address),InetAddress_toString(&path->addr),verbString(inReVerb),inRePacketId);
 		return true;
 	}
 		
@@ -224,18 +224,18 @@ bool _doOK(Peer *peer,Path *path,Buffer *buf)
 
 			// Get reported external surface address if present
 			if (ptr < len)
-				ptr += InetAddress_deserialize(&externalSurfaceAddress,data,ptr);
+				ptr += InetAddress_Deserialize(&externalSurfaceAddress,data,ptr);
 
 			// Handle planet or moon updates if present
 			if ((ptr + 2) <= len) {
 				const unsigned int worldsLen = (unsigned int)ntohs(*(uint16_t *)&data[ptr]);
 				ptr += 2;
-				if (shouldAcceptWorldUpdateFrom(&peer->id._address)) {
+				if (Topology_IsInUpstreams(&peer->id._address)) {
 					const unsigned int endOfWorlds = ptr + worldsLen;
 					while (ptr < endOfWorlds) {
 						World w;
-						ptr += topology_deserialize(&w,&w.roots,data,ptr);
-						addWorld(&w,false);
+						ptr += Topology_Deserialize(&w,&w.roots,data,ptr);
+						Topology_AddWorld(&w,false);
 					}
 				} else {
 					ptr += worldsLen;
@@ -270,18 +270,18 @@ bool tryDecode(Path *path,Buffer *buf)
 	unsigned int len=buf->len;
 	Address srcZta;
 	memset(&srcZta,0,sizeof(srcZta));
-	address_setTo(data+ZT_PACKET_IDX_SOURCE,ZT_ADDRESS_LENGTH,&srcZta);		//get 40bits source zt address
-	const unsigned int c = Packet_cipher(data);
+	Address_SetTo(data+ZT_PACKET_IDX_SOURCE,ZT_ADDRESS_LENGTH,&srcZta);		//get 40bits source zt address
+	const unsigned int c = Packet_Cipher(data);
 	enum Verb v = (enum Verb)(data[ZT_PACKET_IDX_VERB] & 0x1f);
 	if ((c == ZT_PROTO_CIPHER_SUITE__C25519_POLY1305_NONE)&&(v == VERB_HELLO)) {
 		// Only HELLO is allowed in the clear, but will still have a MAC
-		printf(">> HELLO from %s(%s)\n",address_toString(&srcZta),InetAddress_toString(&path->addr));
+		printf(">> HELLO from %s(%s)\n",Address_ToString(srcZta),InetAddress_toString(&path->addr));
 		return _doHELLO(path,buf,false);
 	}
 
-	Peer *pPeer = getPeerByAddress(&srcZta);
+	Peer *pPeer = Peer_GotByAddress(srcZta);
 	if (pPeer) {
-		printf(">> %s from %s(%s)\n",verbString(v),address_toString(&srcZta),InetAddress_toString(&path->addr));
+		printf(">> %s from %s(%s)\n",verbString(v),Address_ToString(srcZta),InetAddress_toString(&path->addr));
 		switch(v) {
 				case VERB_HELLO:                      return _doHELLO(path,buf,true);
 				case VERB_OK:                         return _doOK(pPeer,path,buf);
@@ -309,30 +309,30 @@ void onRemotePacket(Path *path,const InetAddress *localAddr,const InetAddress *f
 	} else if(len > ZT_PROTO_MIN_FRAGMENT_LENGTH) {		//len>16
 		if(((uint8_t *)data)[ZT_PACKET_FRAGMENT_IDX_FRAGMENT_INDICATOR] == ZT_PACKET_FRAGMENT_INDICATOR) {
 			// Handle fragment ----------------------------------------------------
-			if(!RR->pTopology->amRoot && !Path_trustEstablished(path, RR->now)) {
+			if(!RR->pTopology->amRoot && !Path_TrustEstablished(path, RR->now)) {
 				printf("handle fragment, not Root and nontrusted path\n");
 				return;
 			}
 						
 		} else if (len >= ZT_PROTO_MIN_PACKET_LENGTH) {
 			Address destination;
-			address_setTo(data+8,ZT_ADDRESS_LENGTH,&destination);
+			Address_SetTo(data+8,ZT_ADDRESS_LENGTH,&destination);
 			Address source;
-			address_setTo(data+13,ZT_ADDRESS_LENGTH,&source);
-			if(source._a == RR->identity._address._a) {
-				printf("Source %s is RR\n",address_toString(&destination));
+			Address_SetTo(data+13,ZT_ADDRESS_LENGTH,&source);
+			if(source == RR->identity._address) {
+				printf("Source %s is RR\n",Address_ToString(destination));
 				return;
 			}
-			if(destination._a != RR->identity._address._a) {
-				printf("destination %s is NOT RR\n",address_toString(&destination));
-				if(!RR->pTopology->amRoot && !Path_trustEstablished(path, RR->now)) {
+			if(destination != RR->identity._address) {
+				printf("destination %s is NOT RR\n",Address_ToString(destination));
+				if(!RR->pTopology->amRoot && !Path_TrustEstablished(path, RR->now)) {
 					printf("not amRoot && nontrusted Path\n");	
 					return;
 				}
 				//need to do 
 				return;
 			} else if((((uint8_t *)data)[ZT_PACKET_IDX_FLAGS] & 0x40) != 0) {
-				printf("destination %s is RR, try decode\n",address_toString(&destination));
+				printf("destination %s is RR, try decode\n",Address_ToString(destination));
 				const uint64_t packetId = (
 					(((uint64_t)((const uint8_t *)data)[0]) << 56) |
 					(((uint64_t)((const uint8_t *)data)[1]) << 48) |
@@ -358,7 +358,7 @@ void onRemotePacket(Path *path,const InetAddress *localAddr,const InetAddress *f
 
 enum ZT_ResultCode processWirePacket(const InetAddress *localAddr,const InetAddress *fromAddr,Buffer *buf)
 {
-	Path *path = getPath(localAddr, fromAddr);
+	Path *path = Topology_GetPath(localAddr, fromAddr);
 	path->lastIn = RR->now;
 
 	onRemotePacket(path,localAddr,fromAddr,buf);
