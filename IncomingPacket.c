@@ -9,7 +9,8 @@
 #include "Topology.h"
 #include "Version.h"
 #include "Path.h"
-
+#include "Dictionary.h"
+#include "NetworkController.h"
 
 extern RuntimeEnvironment *RR;
 
@@ -196,6 +197,90 @@ bool _doHELLO(Path *path,Buffer *buf,const bool alreadyAuthenticated)
 }
 
 
+
+bool _doMULTICAST_LIKE(Peer *peer,Path *path,Buffer *buf)
+{
+	/*
+	unsigned char *data=buf->b;
+	unsigned int len=buf->len;
+	const uint64_t now = RR->now;
+	const uint64_t pid = Utils_ntoh_u64(*(uint64_t *)&data[0]);
+
+	uint64_t authOnNetwork[256]; // cache for approved network IDs
+	unsigned int authOnNetworkCount = 0;
+	Network *network;		//network
+	bool trustEstablished = false;
+
+	// Iterate through 18-byte network,MAC,ADI tuples
+	for(unsigned int ptr=ZT_PACKET_IDX_PAYLOAD;ptr<len;ptr+=18) {
+		const uint64_t nwid = Utils_ntoh_u64(*(uint64_t *)&data[ptr]);
+
+		bool auth = false;
+		for(unsigned int i=0;i<authOnNetworkCount;++i) {
+			if (nwid == authOnNetwork[i]) {
+				auth = true;
+				break;
+			}
+		}
+		if (!auth) {
+			if ((!network)||(network->id() != nwid))
+				network = RR->node->network(nwid);
+			const bool authOnNet = ((network)&&(network->gate(tPtr,peer)));
+			if (!authOnNet)
+				_sendErrorNeedCredentials(RR,tPtr,peer,nwid);		//send an verb_error
+			trustEstablished |= authOnNet;
+			if (authOnNet||RR->mc->cacheAuthorized(peer->address(),nwid,now)) {
+				auth = true;
+				if (authOnNetworkCount < 256) // sanity check, packets can't really be this big
+					authOnNetwork[authOnNetworkCount++] = nwid;
+			}
+		}
+		if (auth) {
+			const MulticastGroup group(MAC(field(ptr + 8,6),6),at<uint32_t>(ptr + 14));
+			RR->mc->add(tPtr,now,nwid,group,peer->address());
+		}
+	}
+
+	received(peer,path,hops(data),pid,VERB_MULTICAST_LIKE,0,VERB_NOP,trustEstablished);	
+	return true;
+	*/
+	
+}
+
+bool _doNETWORK_CONFIG_REQUEST(Peer *peer,Path *path,Buffer *buf)
+{
+	unsigned char *data=buf->b;
+	unsigned int len=buf->len;
+	const uint64_t nwid = Utils_ntoh_u64(*(uint64_t *)&data[ZT_PROTO_VERB_NETWORK_CONFIG_REQUEST_IDX_NETWORK_ID]);
+	const unsigned int hopCount = hops(data);
+	const uint64_t requestPacketId = Utils_ntoh_u64(*(uint64_t *)&data[ZT_PROTO_VERB_OK_IDX_IN_RE_PACKET_ID]);
+
+	if (RR->localNetworkController) {
+		const unsigned int metaDataLength = (ZT_PROTO_VERB_NETWORK_CONFIG_REQUEST_IDX_DICT_LEN <= len) ? ntohs(*(uint16_t *)&data[ZT_PROTO_VERB_NETWORK_CONFIG_REQUEST_IDX_DICT_LEN]) : 0;
+		const char *metaDataBytes = (metaDataLength != 0) ? (const char *)&data[ZT_PROTO_VERB_NETWORK_CONFIG_REQUEST_IDX_DICT] : (const char *)0;
+		Dictionary metaData;
+		metaData.len=metaDataLength;
+		Dictionary_Init(&metaData,metaDataBytes);
+		InetAddress zero;
+		memset(&zero,0,sizeof(InetAddress));
+		InetAddress fromAddress;
+		memcpy(&fromAddress,(hopCount>0)?&zero:&path->addr,sizeof(InetAddress)); //Is that right?
+		NetworkController_Request(nwid,&fromAddress,requestPacketId,&peer->id,&metaData);	
+	} else {
+			Buffer outp;
+			Packet(&outp,peer->id._address,RR->identity._address,VERB_ERROR);
+			append(&outp,(unsigned char)VERB_NETWORK_CONFIG_REQUEST);
+			append_uint64(&outp,requestPacketId);
+			append(&outp,(unsigned char)ERROR_UNSUPPORTED_OPERATION);
+			append(&outp,nwid);
+			Packet_Armor(&outp,peer->key,true,nextOutgoingCounter(path));
+			Path_Send(path,&outp,RR->now);	
+	} 
+	received(peer,path,hops(data),requestPacketId,VERB_NETWORK_CONFIG_REQUEST,0,VERB_NOP,false);
+
+	return true;
+}
+
 bool _doOK(Peer *peer,Path *path,Buffer *buf)
 {
 	unsigned char *data=buf->b;
@@ -249,9 +334,8 @@ bool _doOK(Peer *peer,Path *path,Buffer *buf)
 				//maybe need to do iam
 			} break;
 		}
-
-		case VERB_WHOIS:
 		case VERB_NETWORK_CONFIG_REQUEST:
+		case VERB_WHOIS:
 		case VERB_MULTICAST_GATHER:
 		case VERB_MULTICAST_FRAME: 
 		default: 
@@ -285,6 +369,8 @@ bool tryDecode(Path *path,Buffer *buf)
 		switch(v) {
 				case VERB_HELLO:                      return _doHELLO(path,buf,true);
 				case VERB_OK:                         return _doOK(pPeer,path,buf);
+				case VERB_NETWORK_CONFIG_REQUEST:	  return _doNETWORK_CONFIG_REQUEST(pPeer,path,buf);
+				case VERB_MULTICAST_LIKE:			  return _doMULTICAST_LIKE(pPeer,path,buf);
 				default:
 					//peer->received(tPtr,_path,hops(),packetId(),v,0,Packet::VERB_NOP,false);
 					printf("ignore unknown verbs\n");

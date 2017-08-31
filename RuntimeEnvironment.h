@@ -4,6 +4,7 @@
 #include "Identity.h"
 #include "Topology.h"
 #include "avl_local.h"
+#include "NetworkController.h"
 
 typedef struct _RuntimeEnvironment{
 	Identity identity;
@@ -11,6 +12,10 @@ typedef struct _RuntimeEnvironment{
 	TREE *addrTree;
 	TREE *pathsTree;
 	uint64_t now;
+
+	// This is set externally to an instance of this base class
+	NetworkController *localNetworkController;
+
 }RuntimeEnvironment;
 
 #endif

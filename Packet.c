@@ -134,6 +134,12 @@ bool udpSend(const struct sockaddr *remoteAddress,const Buffer *buf)
 	return ((long)sendto(udp_sockd,(void *)buf->b,buf->len,0,remoteAddress,(remoteAddress->sa_family == AF_INET6) ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in))==(long)buf->len);
 }
 
+bool Packet_trySend(const Buffer *buf, bool flag)
+{
+	//need to do 
+	return true;
+}
+
 
 int nodeWirePacketSendFunction(const struct sockaddr_storage *localAddr,const struct sockaddr_storage *addr, const Buffer *buf)
 {

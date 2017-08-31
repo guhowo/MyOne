@@ -120,6 +120,89 @@ static char *InetAddress_toString(const InetAddress *addr)
 	return "";
 }
 
+static inline void set(InetAddress *addr, const char *ip, unsigned int port)
+{
+	memset(addr,0,sizeof(InetAddress));
+	if(strstr(ip, ":")){
+		struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)addr;
+		sin6->sin6_family = AF_INET6;
+		sin6->sin6_port = htons((uint16_t)port);
+		
+		if (inet_pton(AF_INET6, ip,(void *)&(sin6->sin6_addr.s6_addr)) <= 0)
+			memset(addr,0,sizeof(InetAddress));
+	}else if(strstr(ip, ".")){
+		struct sockaddr_in *sin = (struct sockaddr_in *)addr;
+		sin->sin_family = AF_INET;
+		sin->sin_port = htons((uint16_t)port);
+		if (inet_pton(AF_INET,ip,(void *)&(sin->sin_addr.s_addr)) <= 0)
+			memset(addr,0,sizeof(InetAddress));
+	}
+	return;
+}
+
+static inline void InetAddress_fromString(const char *s, InetAddress *addr){
+	char *p, *q;
+	char buf[64];
+
+	strcpy(buf, s);
+	p = strstr(buf, "/");
+	if(!p){
+		//no port
+		set(addr, buf, 0);
+	}else{
+		p = strtok(buf, "/");
+		q = strtok(NULL, "/");
+		set(addr, p, atoi(q));
+	}
+	return;
+}
+
+static inline void InetAddress_makeIpv6rfc4193(uint64_t nwid,uint64_t zeroTierAddress, InetAddress *r)
+{
+	struct sockaddr_in6 *const sin6 =(struct sockaddr_in6 *)r;
+	sin6->sin6_family = AF_INET6;
+	sin6->sin6_addr.s6_addr[0] = 0xfd;
+	sin6->sin6_addr.s6_addr[1] = (uint8_t)(nwid >> 56);
+	sin6->sin6_addr.s6_addr[2] = (uint8_t)(nwid >> 48);
+	sin6->sin6_addr.s6_addr[3] = (uint8_t)(nwid >> 40);
+	sin6->sin6_addr.s6_addr[4] = (uint8_t)(nwid >> 32);
+	sin6->sin6_addr.s6_addr[5] = (uint8_t)(nwid >> 24);
+	sin6->sin6_addr.s6_addr[6] = (uint8_t)(nwid >> 16);
+	sin6->sin6_addr.s6_addr[7] = (uint8_t)(nwid >> 8);
+	sin6->sin6_addr.s6_addr[8] = (uint8_t)nwid;
+	sin6->sin6_addr.s6_addr[9] = 0x99;
+	sin6->sin6_addr.s6_addr[10] = 0x93;
+	sin6->sin6_addr.s6_addr[11] = (uint8_t)(zeroTierAddress >> 32);
+	sin6->sin6_addr.s6_addr[12] = (uint8_t)(zeroTierAddress >> 24);
+	sin6->sin6_addr.s6_addr[13] = (uint8_t)(zeroTierAddress >> 16);
+	sin6->sin6_addr.s6_addr[14] = (uint8_t)(zeroTierAddress >> 8);
+	sin6->sin6_addr.s6_addr[15] = (uint8_t)zeroTierAddress;
+	sin6->sin6_port = htons((uint16_t)88); // /88 includes 0xfd + network ID, discriminating by device ID below that
+}
+
+static inline void InetAddress_makeIpv66plane(uint64_t nwid,uint64_t zeroTierAddress,InetAddress *r)
+{
+	nwid ^= (nwid >> 32);
+	struct sockaddr_in6 *const sin6 = (struct sockaddr_in6 *)r;
+	sin6->sin6_family = AF_INET6;
+	sin6->sin6_addr.s6_addr[0] = 0xfc;
+	sin6->sin6_addr.s6_addr[1] = (uint8_t)(nwid >> 24);
+	sin6->sin6_addr.s6_addr[2] = (uint8_t)(nwid >> 16);
+	sin6->sin6_addr.s6_addr[3] = (uint8_t)(nwid >> 8);
+	sin6->sin6_addr.s6_addr[4] = (uint8_t)nwid;
+	sin6->sin6_addr.s6_addr[5] = (uint8_t)(zeroTierAddress >> 32);
+	sin6->sin6_addr.s6_addr[6] = (uint8_t)(zeroTierAddress >> 24);
+	sin6->sin6_addr.s6_addr[7] = (uint8_t)(zeroTierAddress >> 16);
+	sin6->sin6_addr.s6_addr[8] = (uint8_t)(zeroTierAddress >> 8);
+	sin6->sin6_addr.s6_addr[9] = (uint8_t)zeroTierAddress;
+	sin6->sin6_addr.s6_addr[15] = 0x01;
+	sin6->sin6_port = htons((uint16_t)40);
+}
+
+unsigned int InetAddress_netmaskBits(const InetAddress *addr);
+bool InetAddress_containsAddress(const InetAddress *self,const InetAddress *addr);
+void InetAddress_setPort(unsigned int port, InetAddress *addr);
+const void *InetAddress_rawIpData(InetAddress *addr);
 
 
 #endif

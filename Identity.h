@@ -33,6 +33,7 @@ void Identity_Generate(Identity *id);
 void Identity_Serialize(Identity *identity, Buffer *buf, bool includePrivate);
 int Identity_Deserialize(Identity *id, const unsigned char *b, unsigned int startAt);
 bool Identity_FromString(const char *str, Identity *id);
+char *Identity_ToString(const Identity *id,bool includePrivate);
 bool Identity_Agree(const Identity *id,void *key,unsigned int klen);
 bool Identity_LocallyValidate(Identity *id);
 
@@ -40,7 +41,7 @@ bool Identity_LocallyValidate(Identity *id);
  * return true : two identities are the same
  * return false: two identities are different
  */
-static inline bool Identity_IsEqual(Identity *ida, Identity *idb)
+static inline bool Identity_IsEqual(const Identity *ida,const Identity *idb)
 {
 	return ((ida->_address == idb->_address)&&(memcmp(ida->_publicKey, idb->_publicKey, 64)==0));
 }

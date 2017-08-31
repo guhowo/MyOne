@@ -94,5 +94,16 @@ static inline void C25519_sign3(Signature sig,const Pair *mine,const void *msg,u
  * @return True if signature is valid and the message is authentic and unmodified
  */
 int C25519_verify(const Public their,const void *msg,unsigned int len,const void *signature);
+static inline bool C25519_has_PrivateKey(const Private key)
+{
+	unsigned char k[ZT_C25519_PRIVATE_KEY_LEN];
+
+	memset(k, 0, ZT_C25519_PRIVATE_KEY_LEN);
+	if(!memcmp(key, k, ZT_C25519_PRIVATE_KEY_LEN)){
+		return false;
+	}
+	return true;
+}
+
 #endif
 

@@ -1,16 +1,23 @@
 #one_src_files=$(shell echo ${wildcard *.c}|sed 's/selftest.c//g')
 one_src_files=avl_local.c Poly1305.c Utils.c SHA512.c salsa20.c C25519.c  \
-	Address.c Identity.c Path.c Peer.c Packet.c Topology.c background.c \
-	IncomingPacket.c \
-	one.c
+	InetAddress.c Address.c Identity.c Path.c Peer.c Packet.c Topology.c background.c \
+	IncomingPacket.c jsondb.c NetworkController.c Dictionary.c Revocation.c\
+	CertificateOfMembership.c  CertificateOfOwnership.c Capability.c  \
+	Tag.c one.c
 objects=$(patsubst %.c,%.o,$(one_src_files))
+json_c_files=$(shell ls json/*.c)
+json_h_files=$(shell ls json/*.h)
+json_objects=$(patsubst %.c,%.o,$(json_c_files))
+SUBDIRS=json
 
 ifeq ($(ZT_DEBUG),1)
     CFLAGS = -g
 endif
 
-all:$(objects)
-	cc $(CFLAGS) -o one  $(objects)
+all:$(SUBDIRS) $(objects)
+	cc $(CFLAGS) -o one  $(objects) $(json_objects)
+$(SUBDIRS):ECHO
+	make -C $@
 Poly1305.o:Poly1305.c Poly1305.h Constants.h
 	cc $(CFLAGS) -c $^
 Utils.o:Utils.c Utils.h salsa20.h
@@ -22,6 +29,8 @@ SHA512.o:SHA512.c SHA512.h Utils.h
 salsa20.o:salsa20.c salsa20.h Utils.h Constants.h
 	cc $(CFLAGS) -c $^
 C25519.o: C25519.c Constants.h C25519.h SHA512.h Utils.h
+	cc $(CFLAGS) -c $^
+InetAddress.o:InetAddress.c Buffer.h
 	cc $(CFLAGS) -c $^
 Address.o:Address.c Address.h Buffer.h Utils.h
 	cc $(CFLAGS) -c $^
@@ -37,14 +46,36 @@ IncomingPacket.o:IncomingPacket.c IncomingPacket.h Version.h Path.h
 	cc $(CFLAGS) -c $^
 Topology.o:Topology.c list.h Buffer.h InetAddress.h Peer.h World.h Address.h Identity.h Topology.h 	
 	cc $(CFLAGS) -c $^
+jsondb.o:jsondb.c list.h avl_local.h InetAddress.h Address.h ./json/json.h
+	cc $(CFLAGS) -c $^ -I./json
+CertificateOfMembership.o:CertificateOfMembership.c Buffer.h Utils.h Address.h  Identity.h CertificateOfMembership.h
+	cc $(CFLAGS) -c $^
+CertificateOfOwnership.o:CertificateOfOwnership.c Constants.h C25519.h Buffer.h Address.h  Identity.h CertificateOfOwnership.h
+	cc $(CFLAGS) -c $^
+Revocation.o:Revocation.c Constants.h ZeroTierOne.h C25519.h Buffer.h Address.h Revocation.h
+	cc $(CFLAGS) -c $^
+Capability.o:Capability.c Constants.h ZeroTierOne.h C25519.h Buffer.h Address.h Identity.h Capability.h
+	cc $(CFLAGS) -c $^
+Tag.o:Tag.c Constants.h ZeroTierOne.h C25519.h Buffer.h Address.h Tag.h
+	cc $(CFLAGS) -c $^
+Dictionary.o:Dictionary.c
+	cc $(CFLAGS) -c $^ -I./json
+NetworkConfig.o:NetworkConfig.c
+	cc $(CFLAGS) -c $^
+NetworkController.o:NetworkController.c list.h ./json/json.h NetworkController.h
+	cc $(CFLAGS) -c $^ -I./json
 background.o:background.c list.h RuntimeEnvironment.h Utils.h InetAddress.h Identity.h World.h Topology.h Packet.h background.h
 	cc $(CFLAGS) -c $^
 one.o:one.c avl_local.h Utils.h Address.h Identity.h RuntimeEnvironment.h Topology.h IncomingPacket.h Path.h
 	cc $(CFLAGS) -c $^
 
+ECHO:
+	@echo $(SUBDIRS)
+
 .PHONY: clean
 clean:
-	rm -rf *.o *.gch one selftest
+	@rm -rf *.o *.gch one selftest
+	@rm -rf $(SUBDIRS)/*.o $(SUBDIRS)/*.gch
 
 selftest:C25519.c  Poly1305.c  salsa20.c  selftest.c  SHA512.c  Utils.c
 	gcc $^ -o $@

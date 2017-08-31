@@ -183,6 +183,25 @@ bool Identity_FromString(const char *str, Identity *id)
 	return true;
 }
 
+char *Identity_ToString(const Identity *id,bool includePrivate)
+{
+	char *r=(char *)malloc(256);
+	memset(r,0,256);
+
+	strcat(r,Address_ToString(id->_address));
+	strcat(r,":0:"); // 0 == ZT_OBJECT_TYPE_IDENTITY
+	strcat(r,Utils_hex(id->_publicKey,64));
+
+	unsigned char tmpKey[64]={0};
+	bool havePrivateKey = memcmp(tmpKey,id->_privateKey,64)==0 ? false : true;
+	if ((havePrivateKey)&&(includePrivate)) {
+		strcat(r,":");
+		strcat(r,Utils_hex(id->_privateKey,64));
+	}
+
+	return r;
+}
+
 
 /***************************************************************
 **Shortcut method to perform key agreement with another identity

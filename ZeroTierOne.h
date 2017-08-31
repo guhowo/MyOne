@@ -9,6 +9,160 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+/**
+ * Default maximum time delta for COMs, tags, and capabilities
+ *
+ * The current value is two hours, providing ample time for a controller to
+ * experience fail-over, etc.
+ */
+#define ZT_NETWORKCONFIG_DEFAULT_CREDENTIAL_TIME_MAX_MAX_DELTA 7200000ULL
+
+/**
+ * Default minimum credential TTL and maxDelta for COM timestamps
+ *
+ * This is just slightly over three minutes and provides three retries for
+ * all currently online members to refresh.
+ */
+#define ZT_NETWORKCONFIG_DEFAULT_CREDENTIAL_TIME_MIN_MAX_DELTA 185000ULL
+
+/**
+ * Flag: allow passive bridging (experimental)
+ */
+#define ZT_NETWORKCONFIG_FLAG_ALLOW_PASSIVE_BRIDGING 0x0000000000000001ULL
+
+/**
+ * Flag: enable broadcast
+ */
+#define ZT_NETWORKCONFIG_FLAG_ENABLE_BROADCAST 0x0000000000000002ULL
+
+/**
+ * Flag: enable IPv6 NDP emulation for certain V6 address patterns
+ */
+#define ZT_NETWORKCONFIG_FLAG_ENABLE_IPV6_NDP_EMULATION 0x0000000000000004ULL
+
+/**
+ * Flag: result of unrecognized MATCH entries in a rules table: match if set, no-match if clear
+ */
+#define ZT_NETWORKCONFIG_FLAG_RULES_RESULT_OF_UNSUPPORTED_MATCH 0x0000000000000008ULL
+
+/**
+ * Flag: disable frame compression
+ */
+#define ZT_NETWORKCONFIG_FLAG_DISABLE_COMPRESSION 0x0000000000000010ULL
+
+/**
+ * Device is an active bridge
+ */
+#define ZT_NETWORKCONFIG_SPECIALIST_TYPE_ACTIVE_BRIDGE 0x0000020000000000ULL
+
+/**
+ * Anchors are stable devices on this network that can cache multicast info, etc.
+ */
+#define ZT_NETWORKCONFIG_SPECIALIST_TYPE_ANCHOR 0x0000040000000000ULL
+
+/**
+ * Device can send CIRCUIT_TESTs for this network
+ */
+#define ZT_NETWORKCONFIG_SPECIALIST_TYPE_CIRCUIT_TESTER 0x0000080000000000ULL
+
+
+// Network config version
+#define ZT_NETWORKCONFIG_REQUEST_METADATA_KEY_VERSION "v"
+// Protocol version (see Packet.hpp)
+#define ZT_NETWORKCONFIG_REQUEST_METADATA_KEY_PROTOCOL_VERSION "pv"
+// Software vendor
+#define ZT_NETWORKCONFIG_REQUEST_METADATA_KEY_NODE_VENDOR "vend"
+// Software major version
+#define ZT_NETWORKCONFIG_REQUEST_METADATA_KEY_NODE_MAJOR_VERSION "majv"
+// Software minor version
+#define ZT_NETWORKCONFIG_REQUEST_METADATA_KEY_NODE_MINOR_VERSION "minv"
+// Software revision
+#define ZT_NETWORKCONFIG_REQUEST_METADATA_KEY_NODE_REVISION "revv"
+// Rules engine revision
+#define ZT_NETWORKCONFIG_REQUEST_METADATA_KEY_RULES_ENGINE_REV "revr"
+// Maximum number of rules per network this node can accept
+#define ZT_NETWORKCONFIG_REQUEST_METADATA_KEY_MAX_NETWORK_RULES "mr"
+// Maximum number of capabilities this node can accept
+#define ZT_NETWORKCONFIG_REQUEST_METADATA_KEY_MAX_NETWORK_CAPABILITIES "mc"
+// Maximum number of rules per capability this node can accept
+#define ZT_NETWORKCONFIG_REQUEST_METADATA_KEY_MAX_CAPABILITY_RULES "mcr"
+// Maximum number of tags this node can accept
+#define ZT_NETWORKCONFIG_REQUEST_METADATA_KEY_MAX_NETWORK_TAGS "mt"
+// Network join authorization token (if any)
+#define ZT_NETWORKCONFIG_REQUEST_METADATA_KEY_AUTH "a"
+// Network configuration meta-data flags
+#define ZT_NETWORKCONFIG_REQUEST_METADATA_KEY_FLAGS "f"
+
+// These dictionary keys are short so they don't take up much room.
+// By convention we use upper case for binary blobs, but it doesn't really matter.
+
+// network config version
+#define ZT_NETWORKCONFIG_DICT_KEY_VERSION "v"
+// network ID
+#define ZT_NETWORKCONFIG_DICT_KEY_NETWORK_ID "nwid"
+// integer(hex)
+#define ZT_NETWORKCONFIG_DICT_KEY_TIMESTAMP "ts"
+// integer(hex)
+#define ZT_NETWORKCONFIG_DICT_KEY_REVISION "r"
+// address of member
+#define ZT_NETWORKCONFIG_DICT_KEY_ISSUED_TO "id"
+// flags(hex)
+#define ZT_NETWORKCONFIG_DICT_KEY_FLAGS "f"
+// integer(hex)
+#define ZT_NETWORKCONFIG_DICT_KEY_MULTICAST_LIMIT "ml"
+// network type (hex)
+#define ZT_NETWORKCONFIG_DICT_KEY_TYPE "t"
+// text
+#define ZT_NETWORKCONFIG_DICT_KEY_NAME "n"
+// network MTU
+#define ZT_NETWORKCONFIG_DICT_KEY_MTU "mtu"
+// credential time max delta in ms
+#define ZT_NETWORKCONFIG_DICT_KEY_CREDENTIAL_TIME_MAX_DELTA "ctmd"
+// binary serialized certificate of membership
+#define ZT_NETWORKCONFIG_DICT_KEY_COM "C"
+// specialists (binary array of uint64_t)
+#define ZT_NETWORKCONFIG_DICT_KEY_SPECIALISTS "S"
+// routes (binary blob)
+#define ZT_NETWORKCONFIG_DICT_KEY_ROUTES "RT"
+// static IPs (binary blob)
+#define ZT_NETWORKCONFIG_DICT_KEY_STATIC_IPS "I"
+// rules (binary blob)
+#define ZT_NETWORKCONFIG_DICT_KEY_RULES "R"
+// capabilities (binary blobs)
+#define ZT_NETWORKCONFIG_DICT_KEY_CAPABILITIES "CAP"
+// tags (binary blobs)
+#define ZT_NETWORKCONFIG_DICT_KEY_TAGS "TAG"
+// tags (binary blobs)
+#define ZT_NETWORKCONFIG_DICT_KEY_CERTIFICATES_OF_OWNERSHIP "COO"
+// curve25519 signature
+#define ZT_NETWORKCONFIG_DICT_KEY_SIGNATURE "C25519"
+
+// Legacy fields -- these are obsoleted but are included when older clients query
+
+// boolean (now a flag)
+#define ZT_NETWORKCONFIG_DICT_KEY_ALLOW_PASSIVE_BRIDGING_OLD "pb"
+// boolean (now a flag)
+#define ZT_NETWORKCONFIG_DICT_KEY_ENABLE_BROADCAST_OLD "eb"
+// IP/bits[,IP/bits,...]
+// Note that IPs that end in all zeroes are routes with no assignment in them.
+#define ZT_NETWORKCONFIG_DICT_KEY_IPV4_STATIC_OLD "v4s"
+// IP/bits[,IP/bits,...]
+// Note that IPs that end in all zeroes are routes with no assignment in them.
+#define ZT_NETWORKCONFIG_DICT_KEY_IPV6_STATIC_OLD "v6s"
+// 0/1
+#define ZT_NETWORKCONFIG_DICT_KEY_PRIVATE_OLD "p"
+// integer(hex)[,integer(hex),...]
+#define ZT_NETWORKCONFIG_DICT_KEY_ALLOWED_ETHERNET_TYPES_OLD "et"
+// string-serialized CertificateOfMembership
+#define ZT_NETWORKCONFIG_DICT_KEY_CERTIFICATE_OF_MEMBERSHIP_OLD "com"
+// node[,node,...]
+#define ZT_NETWORKCONFIG_DICT_KEY_ACTIVE_BRIDGES_OLD "ab"
+// node;IP/port[,node;IP/port]
+#define ZT_NETWORKCONFIG_DICT_KEY_RELAYS_OLD "rl"
+
+
+
+
 
 /****************************************************************************/
 /* Core constants                                                           */
@@ -1778,6 +1932,18 @@ enum Verb /* Max value: 32 (5 bits) */
 	VERB_PUSH_DIRECT_PATHS = 0x10,
 	VERB_USER_MESSAGE = 0x14
 };
+
+enum Credential
+{
+	CREDENTIAL_TYPE_NULL = 0,
+	CREDENTIAL_TYPE_COM = 1,        // CertificateOfMembership
+	CREDENTIAL_TYPE_CAPABILITY = 2,
+	CREDENTIAL_TYPE_TAG = 3,
+	CREDENTIAL_TYPE_COO = 4,        // CertificateOfOwnership
+	CREDENTIAL_TYPE_COR = 5,        // CertificateOfRepresentation
+	CREDENTIAL_TYPE_REVOCATION = 6
+};
+
 
 #endif
 

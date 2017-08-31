@@ -38,6 +38,9 @@
 #define ZT_PROTO_VERB_OK_IDX_IN_RE_PACKET_ID (ZT_PROTO_VERB_OK_IDX_IN_RE_VERB + 1)
 #define ZT_PROTO_VERB_OK_IDX_PAYLOAD (ZT_PROTO_VERB_OK_IDX_IN_RE_PACKET_ID + 8)
 
+#define ZT_PROTO_VERB_NETWORK_CONFIG_REQUEST_IDX_NETWORK_ID (ZT_PACKET_IDX_PAYLOAD)
+#define ZT_PROTO_VERB_NETWORK_CONFIG_REQUEST_IDX_DICT_LEN (ZT_PROTO_VERB_NETWORK_CONFIG_REQUEST_IDX_NETWORK_ID + 8)
+#define ZT_PROTO_VERB_NETWORK_CONFIG_REQUEST_IDX_DICT (ZT_PROTO_VERB_NETWORK_CONFIG_REQUEST_IDX_DICT_LEN + 2)
 
 #define ZT_PROTO_VERB_HELLO__OK__IDX_TIMESTAMP (ZT_PROTO_VERB_OK_IDX_PAYLOAD)
 #define ZT_PROTO_VERB_HELLO__OK__IDX_PROTOCOL_VERSION (ZT_PROTO_VERB_HELLO__OK__IDX_TIMESTAMP + 8)
@@ -84,6 +87,7 @@ void Packet(Buffer *buf, const Address dest, const Address source, const enum Ve
 void Packet_SetAddress(Buffer *buf, const Address addr);
 void sendHELLO(Peer *peer,const InetAddress *localAddr,const InetAddress *atAddress,uint64_t _now,unsigned int counter);
 bool udpSend(const struct sockaddr *remoteAddress,const Buffer *buf);
+bool Packet_trySend(const Buffer *buf, bool flag);
 void Packet_Armor(Buffer *buf, const void *key,bool encryptPayload,unsigned int counter);
 bool Packet_Dearmor(Buffer *buf, const void *key);
 void Packet_CryptField(const void *key,unsigned int start,unsigned int len);

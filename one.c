@@ -22,11 +22,15 @@
 #include "IncomingPacket.h"
 #include "Path.h"
 #include "Buffer.h"
+#include "NetworkController.h"
+#include "jsondb.h"
 
 const int port = 4443;
 RuntimeEnvironment *RR = NULL;
 char * identity_secret = "61a7181461:0:5e5fb8e1b55867d50c7909a70df84fdb8f326321efb55de8da967adbde120b67941e0ab3c69cf382e76669536f3de3b3207e3b2c714aaf1a27cb3efb6ed12264:351e038c869ce2edf86fa5db160591ebc361ad55954e76d44e8bd03bdc3a1793334a03ec094d6a5661bbfd84a88ed630c3738a3ab79f49b8b2bf42892bad0678";
 int udp_sockd;
+NetworkController controller;
+
 
 
 void myPoll(unsigned long timeout, int sockd, struct sockaddr_in addr)
@@ -87,6 +91,9 @@ void init(uint64_t _now){
 	}
 
 	Topology_Init();
+
+	Jsondb_load();
+//	NetworkController_Init();
 }
 
 

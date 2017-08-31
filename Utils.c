@@ -17,6 +17,8 @@
 
 #include "Utils.h"
 
+char *HEXCHARS="0123456789abcdef";
+
 uint64_t now()
 {
 	struct timeval tv;
@@ -142,6 +144,17 @@ bool Utils_secureEq(const void *a,const void *b,unsigned int len)
 	return (diff == 0);
 }
 
+char *Utils_hex(const void *data,unsigned int len)
+{
+	char *r=(char *)malloc(len * 2+1);
+	unsigned int i,j;
+	for(i=0,j=0;i<len;++i) {
+		r[j++]=HEXCHARS[(((const unsigned char *)data)[i] & 0xf0) >> 4];
+		r[j++]=HEXCHARS[((const unsigned char *)data)[i] & 0x0f];
+	}
+	return r;
+}
+
 unsigned int Utils_unhex(const char *hex,unsigned int maxlen,void *buf,unsigned int len)
 {
 	int n = 1;
@@ -174,6 +187,19 @@ unsigned int Utils_unhex(const char *hex,unsigned int maxlen,void *buf,unsigned 
 	}
 
 	return l;
+}
+
+
+unsigned int long long Utils_hexStrToU64(const char *s)
+{
+	return strtoull(s,(char **)0,16);
+}
+
+
+unsigned long long Utils_strToU64(const char *s)
+{
+
+	return strtoull(s,(char **)0,10);
 }
 
 

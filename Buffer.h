@@ -21,6 +21,19 @@ static inline void append(Buffer *buf, const unsigned char v)
 	buf->len +=  sizeof(v);
 }
 
+static inline void append_uint32(Buffer *buf, uint32_t v)
+{
+#ifdef ZT_NO_TYPE_PUNNING
+		uint8_t *p = (uint8_t *)(buf->b[buf->len]);
+		for(unsigned int x=1;x<=sizeof(uint32_t);++x)
+			*(p++) = (uint8_t)(v >> (8 * (sizeof(uint32_t) - x)));
+#else
+		uint32_t *const ZT_VAR_MAY_ALIAS p = (uint32_t*)(buf->b + buf->len);
+		*p = htonl(v);
+#endif
+		buf->len += sizeof(uint64_t);
+}
+
 static inline void append_uint64(Buffer *buf, uint64_t v)
 {
 #ifdef ZT_NO_TYPE_PUNNING
@@ -62,6 +75,23 @@ static inline void setAt(Buffer *buf, unsigned int i,const uint16_t v)
 	*p = htons(v);
 }
 
+static inline uint16_t at_u16(Buffer *buf, unsigned int i)
+{
+	const uint16_t *const ZT_VAR_MAY_ALIAS p =(const uint16_t *)(buf->b + i);
+	return ntohs(*p);
+}
+
+static inline uint16_t at_u32(Buffer *buf, unsigned int i)
+{
+	const uint32_t *const ZT_VAR_MAY_ALIAS p =(const uint32_t *)(buf->b + i);
+	return ntohl(*p);
+}
+
+static inline uint64_t at_u64(Buffer *buf, unsigned int i)
+{
+	const uint64_t *const ZT_VAR_MAY_ALIAS p =(const uint64_t *)(buf->b + i);
+	return Utils_ntoh_u64(*p);
+}
 
 static inline void Buffer_Init(Buffer * b){
 	b->len = 0;

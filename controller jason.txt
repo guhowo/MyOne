@@ -1,0 +1,78 @@
+[root@localhost member]# cat 1ce58dbdd2.json 
+{
+ "activeBridge": false,
+ "address": "1ce58dbdd2",
+ "authHistory": [
+  {
+   "a": true,
+   "by": "networkIsPublic",
+   "c": null,
+   "ct": null,
+   "ts": 1503294877438
+  }
+ ],
+ "authorized": true,
+ "capabilities": [],
+ "creationTime": 1503289483843,
+ "id": "1ce58dbdd2",
+ "identity": "1ce58dbdd2:0:878568f0f2ab6306c8032e01a358cd6764d16445dbf87157e8448389eab16d16358c7890fa2ce10c14bb8c8577681b3afa17373372b727b1613826169e7a415c",
+ "ipAssignments": [
+  "119.23.226.134"
+ ],
+ "lastAuthorizedTime": 1503294877438,
+ "lastDeauthorizedTime": 0,
+ "noAutoAssignIps": false,
+ "nwid": "61f8500061000001",
+ "objtype": "member",
+ "physicalAddr": "119.23.0.97/35135",
+ "revision": 1,
+ "tags": [],
+ "vMajor": 1,
+ "vMinor": 2,
+ "vProto": 9,
+ "vRev": 5
+}
+
+证书种类：
+com: 成员资格证书
+revocation:撤销，controller通过设置hard timestamp，撤销一个member的资质;
+capabilities: a bundle of rules;用于授予权限。
+tags：键值对，用于按roles,department,classification分类对members进行分类;
+coo:这些证明给定的网络成员拥有某些东西，如IP地址。这些目前仅用于锁定网络以防止IP地址欺骗，但是将来可以使用它来验证可以在过滤器中匹配的其他网络级实体的所有权。
+
+
+如果一个network是public的，那么他的members不会check他们的com,而新加入的member自动标记为authorised.
+
+getNetworkAndMember
+1、根据nwid查询network,若无，返回0，若有，查询Member，若无，返回1。若member也有，返回3
+2、得到networkconfig和memberconfig、ns
+3、initialize the new Member
+4、
+
+数据结构：
+struct _Networks{
+	struct list_head list;
+	uint64_t nwid;
+	Json network;
+	TREE *member;
+}Networks;
+
+
+
+struct member{
+	
+}
+
+const char *p="/var/lib/zt/..."
+
+JsonDB_Init(const char *path);
+
+
+
+
+
+
+
+
+
+
