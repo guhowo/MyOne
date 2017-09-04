@@ -31,7 +31,7 @@ static inline void append_uint32(Buffer *buf, uint32_t v)
 		uint32_t *const ZT_VAR_MAY_ALIAS p = (uint32_t*)(buf->b + buf->len);
 		*p = htonl(v);
 #endif
-		buf->len += sizeof(uint64_t);
+		buf->len += sizeof(uint32_t);
 }
 
 static inline void append_uint64(Buffer *buf, uint64_t v)

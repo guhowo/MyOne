@@ -89,6 +89,7 @@ unsigned int CertificateOfOwnership_deserialize(Buffer *buf, unsigned int startA
 bool CertificateOfOwnership_sign(const Identity *signer, CertificateOfOwnership *coo)
 {
 	Buffer tmp;
+	Buffer_Init(&tmp);
 	
 	if(C25519_has_PrivateKey(signer->_privateKey)){
 		coo->signedBy = signer->_address;

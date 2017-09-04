@@ -34,6 +34,13 @@ static Jsondb CT;
 
 static void _recomputeSummaryInfo(const uint64_t networkId);
 
+void Jsondb_initNsInfo(NetworkSummaryInfo *ns)
+{
+	memset(ns,0,sizeof(NetworkSummaryInfo));
+	INIT_LIST_HEAD(&(ns->allocatedIps.list));
+}
+
+
 int JsondbMembers_cmp(void *n, void *o)
 {
 	return memcmp(n, o, sizeof(uint64_t));
@@ -51,6 +58,7 @@ Jsondb *jsondb_new(uint64_t nwid){
 	new_db->NetworkId = nwid;
 	new_db->members = avl_tree_dup(JsondbMembers_cmp);
 	list_add_tail(&new_db->list, &CT.list);
+	Jsondb_initNsInfo(&(new_db->summaryInfo));
 	return new_db;
 }
 
@@ -215,7 +223,7 @@ bool Jsondb_getNetwork(const uint64_t networkId, json_object **config)
 	return true;
 }
 
-bool Jsondb_getNetworkSummaryInfo(const uint64_t networkId,NetworkSummaryInfo *ns)
+bool Jsondb_getNetworkSummaryInfo(const uint64_t networkId,NetworkSummaryInfo **ns)
 {
 	Jsondb *pdb = NULL;
 	
@@ -224,7 +232,7 @@ bool Jsondb_getNetworkSummaryInfo(const uint64_t networkId,NetworkSummaryInfo *n
 		return false;
 	}
 	
-	memcpy(ns, &pdb->summaryInfo, sizeof(NetworkSummaryInfo));
+	*ns = &pdb->summaryInfo;
 	return true;
 }
 
@@ -232,7 +240,7 @@ bool Jsondb_getNetworkSummaryInfo(const uint64_t networkId,NetworkSummaryInfo *n
 /**
  * @return Bit mask: 0 == none, 1 == network only, 3 == network and member
  */
-int Jsondb_getNetworkAndMember(const uint64_t networkId,const uint64_t nodeId, json_object **networkConfig, json_object **memberConfig,NetworkSummaryInfo *ns)
+int Jsondb_getNetworkAndMember(const uint64_t networkId,const uint64_t nodeId, json_object **networkConfig, json_object **memberConfig,NetworkSummaryInfo **ns)
 {
 	Jsondb *pdb = NULL;
 	JsondbMembers *pjm = NULL;
@@ -248,7 +256,7 @@ int Jsondb_getNetworkAndMember(const uint64_t networkId,const uint64_t nodeId, j
 	}
 	*networkConfig = json_tokener_parse(pdb->config);
 	*memberConfig = json_tokener_parse(pjm->MemberConfig);
-	memcpy(ns, &pdb->summaryInfo, sizeof(NetworkSummaryInfo));
+	*ns = &pdb->summaryInfo;
 	
 	return 3;
 }

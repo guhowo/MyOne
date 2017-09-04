@@ -35,3 +35,8 @@ ZeroTierOne发布：
 
 下载地址：git@git.tisp.com:yangdan/zerotier_deamon.git
 下一步计划：调试现有的功能，并完成Network响应组播报文doMulticast的功能
+
+遗留Bug:
+controller的member json文件删除后，join时生成内容为空的文件，再次启动controller出现段错误。
+controller 写json文件时，没有格式化，不影响功能，以后格式化；
+一些request报文没有走到tryDecode流程，原因需要进一步确认；

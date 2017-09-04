@@ -203,7 +203,7 @@ unsigned int InetAddress_netmaskBits(const InetAddress *addr);
 bool InetAddress_containsAddress(const InetAddress *self,const InetAddress *addr);
 void InetAddress_setPort(unsigned int port, InetAddress *addr);
 const void *InetAddress_rawIpData(InetAddress *addr);
-
+bool InetAddress_compare(const InetAddress *a, const InetAddress *b);
 
 #endif
 

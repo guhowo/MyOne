@@ -15,14 +15,14 @@ InetAddress _netmask(const InetAddress *self,const InetAddress *addr)
 	memcpy(&r,self,sizeof(r));
 	switch(r.address.ss_family) {
 		case AF_INET:
-			((struct sockaddr_in *)&r)->sin_addr.s_addr = htonl((uint32_t)(0xffffffff << (32 - InetAddress_netmaskBits(addr)%32)));
+			((struct sockaddr_in *)&r)->sin_addr.s_addr = htonl((uint32_t)(0xffffffff << (32 - InetAddress_netmaskBits(addr))));
 			break;
 		case AF_INET6: {
 			uint64_t nm[2];
 			const unsigned int bits = InetAddress_netmaskBits(addr);
             if(bits) {
-                nm[0] = Utils_hton_u64((uint64_t)((bits >= 64) ? 0xffffffffffffffffULL : (0xffffffffffffffffULL << (64 - bits%64))));
-                nm[1] = Utils_hton_u64((uint64_t)((bits <= 64) ? 0ULL : (0xffffffffffffffffULL << (128 - bits%128))));
+                nm[0] = Utils_hton_u64((uint64_t)((bits >= 64) ? 0xffffffffffffffffULL : (0xffffffffffffffffULL << (64 - bits))));
+                nm[1] = Utils_hton_u64((uint64_t)((bits <= 64) ? 0ULL : (0xffffffffffffffffULL << (128 - bits))));
             }
             else {
                 nm[0] = 0;
@@ -81,6 +81,30 @@ const void *InetAddress_rawIpData(InetAddress *addr)
 		case AF_INET6: return (const void *)&(((const struct sockaddr_in6 *)addr)->sin6_addr.s6_addr);
 		default: return 0;
 	}
+}
+
+bool InetAddress_compare(const InetAddress *a, const InetAddress *b)
+{
+	if (a->address.ss_family == b->address.ss_family) {
+		switch(a->address.ss_family) {
+			case AF_INET:
+				return (
+					(((const struct sockaddr_in *)a)->sin_port == ((const struct sockaddr_in *)b)->sin_port)&&
+					(((const struct sockaddr_in *)a)->sin_addr.s_addr == ((const struct sockaddr_in *)b)->sin_addr.s_addr));
+				break;
+			case AF_INET6:
+				return (
+					(((const struct sockaddr_in6 *)a)->sin6_port == ((const struct sockaddr_in6 *)b)->sin6_port)&&
+					(((const struct sockaddr_in6 *)a)->sin6_flowinfo == ((const struct sockaddr_in6 *)b)->sin6_flowinfo)&&
+					(memcmp(&(((const struct sockaddr_in6 *)a)->sin6_addr.s6_addr),&(((const struct sockaddr_in6 *)b)->sin6_addr.s6_addr),16) == 0)&&
+					(((const struct sockaddr_in6 *)a)->sin6_scope_id == ((const struct sockaddr_in6 *)b)->sin6_scope_id));
+				break;
+			default:
+				return (memcmp(a,b,sizeof(InetAddress)) == 0);
+		}
+	}
+	return false;
+
 }
 
 

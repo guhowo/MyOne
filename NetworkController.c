@@ -315,34 +315,35 @@ void ncSendError(uint64_t nwid,uint64_t requestPacketId,const Address destinatio
 	}
 }
 
-#define NC_INIT_ARRAY(obj, key)         do{                                                                     \
+#define NC_INIT_ARRAY(obj, key)         do																		\
+										{                                                                       \
                                             if(!JSON_HAVE_OBJECT(obj, key)){                                    \
                                                 json_object *o = json_object_new_array();                       \
                                                 json_object_object_add(obj, key, o);                            \
                                             }                                                                   \
                                         }while(0)
+                                        
 #define NC_INIT_BOOL(obj, key, b)       do{                                                                     \
                                             if(!JSON_HAVE_OBJECT(obj, key)){                                    \
-                                                json_object *o = json_object_new_object();                      \
-                                                json_object_set_boolean(o, b);                                  \
+                                                json_object *o = json_object_new_boolean(b);                    \
                                                 json_object_object_add(obj, key, o);                            \
                                             }                                                                   \
                                         }while(0)
                  
-#define NC_INIT_INT64(obj, key, i)       do{                                                                     \
+#define NC_INIT_INT64(obj, key, i)      do{                                                                     \
                                             if(!JSON_HAVE_OBJECT(obj, key)){                                    \
-                                                json_object *o = json_object_new_object();                      \
-                                                json_object_set_int64(o, (int64_t)i);                           \
+                                                json_object *o = json_object_new_int64((int64_t)i);             \
                                                 json_object_object_add(obj, key, o);                            \
                                             }                                                                   \
                                         }while(0)
-#define NC_INIT_INT(obj, key, i)       do{                                                                     \
+                                        
+#define NC_INIT_INT(obj, key, i)        do{                                                                     \
                                             if(!JSON_HAVE_OBJECT(obj, key)){                                    \
-                                                json_object *o = json_object_new_object();                      \
-                                                json_object_set_int(o, (int)i);                                 \
+                                                json_object *o = json_object_new_int((int)i);                   \
                                                 json_object_object_add(obj, key, o);                            \
                                             }                                                                   \
                                         }while(0)
+
 
 void NetworkController_InitMember(json_object *member)
 {
@@ -364,13 +365,11 @@ void NetworkController_InitMember(json_object *member)
     NC_INIT_INT(member, "vRev", -1);
     NC_INIT_INT(member, "vProto", -1);
     if(!JSON_HAVE_OBJECT(member, "physicalAddr")){
-        obj = json_object_new_object();
+        obj = json_object_new_string("");
         json_object_object_add(member, "physicalAddr", obj);
     }    
     
-	obj = json_object_new_object();
-	json_object_set_string(obj, "member");
-	json_object_object_add(member, "objtype", obj);
+	json_object_object_add(member, "objtype", json_object_new_string("member"));
   
 
 	return;
@@ -444,8 +443,8 @@ void _request(uint64_t nwid,const InetAddress *fromAddr,uint64_t requestPacketId
 	json_object *network=NULL;
 	json_object *member=NULL;
 	bool origMember=true;
-	NetworkSummaryInfo ns;
-
+	NetworkSummaryInfo *ns=NULL;
+	
 	if(requestPacketId) {
 		MemberStatus *ms = getMemberStatus(nwid,identity);
 		
@@ -463,7 +462,8 @@ void _request(uint64_t nwid,const InetAddress *fromAddr,uint64_t requestPacketId
 		return;
 	} else if (ret==1) {	//no member, has network
 		Jsondb_getNetwork(nwid,&network);
-		member=json_object_new_object();		
+		member=json_object_new_object();
+		Jsondb_getNetworkSummaryInfo(nwid,&ns);
 	}
 
 	const bool newMember = ((!JSON_IS_OBJECT(member))||(JSON_IS_NULL(member)==json_type_null));
@@ -480,19 +480,16 @@ void _request(uint64_t nwid,const InetAddress *fromAddr,uint64_t requestPacketId
 	} else {
 		// If we do not yet know this member's identity, learn it.
 		char *IdentityStr=Identity_ToString(identity,false);
-		json_object_set_string(json_object_object_get(member,"identity"),IdentityStr);
+		json_object_object_add(member,"identity",json_object_new_string(IdentityStr));		
 		free(IdentityStr);	
 		/*--- malloc not free */
 	}
 
 	// These are always the same, but make sure they are set
 	const char *addrs=Address_ToString(identity->_address);
-	json_object *joId=json_object_object_get(member,"id");
-	json_object_set_string(joId,addrs);
-	json_object *joAddress=json_object_object_get(member,"address");
-	json_object_set_string(joAddress,addrs);
-	json_object *joNwid=json_object_object_get(member,"nwid");
-	json_object_set_string(joNwid,nwids);
+	json_object_object_add(member,"id",json_object_new_string(addrs));
+	json_object_object_add(member,"address",json_object_new_string(addrs));
+	json_object_object_add(member,"nwid",json_object_new_string(nwids));
 		
 	// Determine whether and how member is authorized
 	const char *authorizedBy = (const char *)0;
@@ -559,9 +556,7 @@ void _request(uint64_t nwid,const InetAddress *fromAddr,uint64_t requestPacketId
 				memcpy(&ms->physicalAddr,fromAddr,sizeof(InetAddress));
 
 /*---  physicalAddr not null */
-			InetAddress tmpInetAddr;
-			memset(&tmpInetAddr,0,sizeof(InetAddress));
-			if (memcmp(&ms->physicalAddr,&tmpInetAddr,sizeof(tmpInetAddr))!=0) {
+			if (ms->physicalAddr.address.ss_family != 0) {
 				json_object *jovphysicalAddr=json_object_object_get(member,"physicalAddr");
 				json_object_set_string(jovphysicalAddr,InetAddress_toString(&ms->physicalAddr));
 			}
@@ -573,11 +568,11 @@ void _request(uint64_t nwid,const InetAddress *fromAddr,uint64_t requestPacketId
 	}
 
 	uint64_t credentialtmd = ZT_NETWORKCONFIG_DEFAULT_CREDENTIAL_TIME_MAX_MAX_DELTA;
-	if (_now > ns.mostRecentDeauthTime) {
+	if (_now > ns->mostRecentDeauthTime) {
 		// If we recently de-authorized a member, shrink credential TTL/max delta to
 		// be below the threshold required to exclude it. Cap this to a min/max to
 		// prevent jitter or absurdly large values.
-		const uint64_t deauthWindow = _now - ns.mostRecentDeauthTime;
+		const uint64_t deauthWindow = _now - ns->mostRecentDeauthTime;
 		if (deauthWindow < ZT_NETWORKCONFIG_DEFAULT_CREDENTIAL_TIME_MIN_MAX_DELTA) {
 			credentialtmd = ZT_NETWORKCONFIG_DEFAULT_CREDENTIAL_TIME_MIN_MAX_DELTA;
 		} else if (deauthWindow < (ZT_NETWORKCONFIG_DEFAULT_CREDENTIAL_TIME_MAX_MAX_DELTA + 5000ULL)) {
@@ -629,7 +624,7 @@ void _request(uint64_t nwid,const InetAddress *fromAddr,uint64_t requestPacketId
 		//EmbededNetworkController.cpp 1340-1387 unfinished
 	}
 	
-	if (json_object_get_type(routes)==json_type_array) {
+	if (JSON_IS_ARRAY(routes)) {
 		unsigned long i;
 		for(i=0;i<json_object_array_length(rules);++i) {
 			if (nc.routeCount >= ZT_MAX_NETWORK_ROUTES)
@@ -637,10 +632,10 @@ void _request(uint64_t nwid,const InetAddress *fromAddr,uint64_t requestPacketId
 			json_object *route = json_object_array_get_idx(routes,i);
 			json_object *target = json_object_object_get(route,"target");
 			json_object *via = json_object_object_get(route,"via");
-			if (json_object_get_type(routes)==json_type_string) {
+			if (JSON_IS_STRING(target)) {
 				InetAddress t,v;
 				InetAddress_fromString(json_object_get_string(target), &t);
-				if (json_object_get_type(via)==json_type_string) 
+				if (JSON_IS_STRING(via)) 
 					InetAddress_fromString(json_object_get_string(via), &v);
 				if ((t.address.ss_family == AF_INET)||(t.address.ss_family == AF_INET6)) {
 					ZT_VirtualNetworkRoute *r = &(nc.routes[nc.routeCount]);
@@ -754,7 +749,7 @@ void _request(uint64_t nwid,const InetAddress *fromAddr,uint64_t requestPacketId
 						}
 
 						// If it's routed, then try to claim and assign it and if successful end loop
-						if ( (routedNetmaskBits > 0) && (!findInetAddr(&ns.allocatedIps,&ip6))) {
+						if ( (routedNetmaskBits > 0) && (!findInetAddr(&ns->allocatedIps,&ip6))) {
 							json_object_array_add(ipAssignments,json_object_new_string(InetAddress_toString(&ip6)));
 							json_object *tmpipAssignments=json_object_object_get(member,"ipAssignments");
 							json_object_set_string(tmpipAssignments,json_object_get_string(ipAssignments));
@@ -802,7 +797,7 @@ void _request(uint64_t nwid,const InetAddress *fromAddr,uint64_t requestPacketId
 							for(rk=0;rk<nc.routeCount;++rk) {
 								if (nc.routes[rk].target.ss_family == AF_INET) {
 									uint32_t targetIp = ntohl((uint32_t)(((const struct sockaddr_in *)&(nc.routes[rk].target))->sin_addr.s_addr));
-									int targetBits = ntohl((uint16_t)(((const struct sockaddr_in *)&(nc.routes[rk].target))->sin_port));
+									int targetBits = ntohs((uint16_t)(((const struct sockaddr_in *)&(nc.routes[rk].target))->sin_port));
 									if ((ip & (0xffffffff << (32 - targetBits))) == targetIp) {
 										routedNetmaskBits = targetBits;
 										break;
@@ -815,10 +810,8 @@ void _request(uint64_t nwid,const InetAddress *fromAddr,uint64_t requestPacketId
 							ip4.address.ss_family = AF_INET;
 							((struct sockaddr_in *)&ip4)->sin_addr.s_addr = htonl(ip);
 							((struct sockaddr_in *)&ip4)->sin_port = htons((uint16_t)0);
-							if ( (routedNetmaskBits > 0) && (!findInetAddr(&ns.allocatedIps,&ip4)) ) {
+							if ( (routedNetmaskBits > 0) && (!findInetAddr(&ns->allocatedIps,&ip4)) ) {
 								json_object_array_add(ipAssignments,json_object_new_string(InetAddress_toString(&ip4)));
-								json_object *tmpipAssignments=json_object_object_get(member,"ipAssignments");
-								json_object_set_string(tmpipAssignments,json_object_get_string(ipAssignments));
 								if (nc.staticIpCount < ZT_MAX_ZT_ASSIGNED_ADDRESSES) {
 									struct sockaddr_in *const v4ip = (struct sockaddr_in *)(&(nc.staticIps[nc.staticIpCount++]));
 									v4ip->sin_family = AF_INET;
