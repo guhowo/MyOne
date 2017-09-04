@@ -23,6 +23,10 @@ int Dictionary_Get(const Dictionary *metaData,const char *key,char *dest,unsigne
 //Get an unsigned int64 stored as hex in the dictionary
 uint64_t Dictionary_GetUI(const Dictionary *metaData,const char *key,uint64_t dfl);
 bool Dictionary_GetToBuffer(const Dictionary *metaData,const char *key,Buffer *dest);
+bool Dictionary_add(Dictionary *d,const char *key,const char *value,int vlen);
+bool Dictionary_addUint64(Dictionary *d,const char *key,uint64_t value);
+bool Dictionary_addBuffer(Dictionary *d,const char *key,const Buffer *value);
+
 
 
 #endif

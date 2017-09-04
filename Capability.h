@@ -10,7 +10,7 @@
 #include "ZeroTierOne.h"
 
 
-typedef struct {
+typedef struct _Capability{
 	uint64_t nwid;
 	uint64_t ts;
 	uint32_t id;
@@ -26,9 +26,9 @@ typedef struct {
 
 void Capability_serialize(Buffer *buf,const bool forSign, Capability *cb);
 unsigned int Capability_deserialize(Buffer *buf,unsigned int startAt, Capability *cb);
-static inline int Capability_compare(const Capability *a,const Capability *b)
+static inline int Capability_compare(const void *a,const void *b)
 {
-	return (a->id < b->id);	
+	return (((Capability *)a)->id < ((Capability *)b)->id);	
 }
 
 #endif

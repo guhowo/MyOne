@@ -14,19 +14,14 @@
 
 extern RuntimeEnvironment *RR;
 
+void expectReplyTo(const uint64_t packetId)
+{
+	return;
+}
+
 bool expectingReplyTo(const uint64_t packetId)
 {
-/*
-	const uint32_t pid2 = (uint32_t)(packetId >> 32);
-	const unsigned long bucket = (unsigned long)(pid2 & ZT_EXPECTING_REPLIES_BUCKET_MASK1);
-	for(unsigned long i=0;i<=ZT_EXPECTING_REPLIES_BUCKET_MASK2;++i) {
-		if (_expectingRepliesTo[bucket][i] == pid2)
-			return true;
-	}
-	return false;
-*/
 	return true;
-	
 }
 
 bool _doHELLO(Path *path,Buffer *buf,const bool alreadyAuthenticated)
@@ -200,10 +195,10 @@ bool _doHELLO(Path *path,Buffer *buf,const bool alreadyAuthenticated)
 
 bool _doMULTICAST_LIKE(Peer *peer,Path *path,Buffer *buf)
 {
-	/*
+/*
 	unsigned char *data=buf->b;
 	unsigned int len=buf->len;
-	const uint64_t now = RR->now;
+	const uint64_t _now = RR->now;
 	const uint64_t pid = Utils_ntoh_u64(*(uint64_t *)&data[0]);
 
 	uint64_t authOnNetwork[256]; // cache for approved network IDs
@@ -237,14 +232,13 @@ bool _doMULTICAST_LIKE(Peer *peer,Path *path,Buffer *buf)
 		}
 		if (auth) {
 			const MulticastGroup group(MAC(field(ptr + 8,6),6),at<uint32_t>(ptr + 14));
-			RR->mc->add(tPtr,now,nwid,group,peer->address());
+			RR->mc->add(tPtr,now,nwid,group,peer->address);
 		}
 	}
 
 	received(peer,path,hops(data),pid,VERB_MULTICAST_LIKE,0,VERB_NOP,trustEstablished);	
-	return true;
+	return true;	
 	*/
-	
 }
 
 bool _doNETWORK_CONFIG_REQUEST(Peer *peer,Path *path,Buffer *buf)
@@ -253,7 +247,7 @@ bool _doNETWORK_CONFIG_REQUEST(Peer *peer,Path *path,Buffer *buf)
 	unsigned int len=buf->len;
 	const uint64_t nwid = Utils_ntoh_u64(*(uint64_t *)&data[ZT_PROTO_VERB_NETWORK_CONFIG_REQUEST_IDX_NETWORK_ID]);
 	const unsigned int hopCount = hops(data);
-	const uint64_t requestPacketId = Utils_ntoh_u64(*(uint64_t *)&data[ZT_PROTO_VERB_OK_IDX_IN_RE_PACKET_ID]);
+	const uint64_t requestPacketId = Utils_ntoh_u64(*(uint64_t *)&data[ZT_PACKET_IDX_IV]);
 
 	if (RR->localNetworkController) {
 		const unsigned int metaDataLength = (ZT_PROTO_VERB_NETWORK_CONFIG_REQUEST_IDX_DICT_LEN <= len) ? ntohs(*(uint16_t *)&data[ZT_PROTO_VERB_NETWORK_CONFIG_REQUEST_IDX_DICT_LEN]) : 0;

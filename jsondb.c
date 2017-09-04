@@ -14,7 +14,7 @@
 #include "jsondb.h"
 
 #define MAX_JSON_STRING 1024
-#define DEFAULT_PATH "./controller.d/network"
+#define DEFAULT_PATH "/var/lib/zerotier-one/controller.d/network"
 
 typedef struct{
 	uint64_t NodeId;
@@ -59,7 +59,7 @@ int jsondb_read_member(const char *path, Jsondb * m)
 	DIR *pDir = NULL;
 	struct dirent * ent = NULL;
 	JsondbMembers *member = NULL;
-	char tmpPath[64];
+	char tmpPath[128];
 	const char *p;
 	json_object *newObject = NULL;
 	
@@ -107,7 +107,7 @@ int jsondb_read_networkId(const char *path)
 {
 	DIR *pDir = NULL;
 	struct dirent * ent = NULL;
-	char tmpPath[64];
+	char tmpPath[128];
 	json_object *newObject = NULL;
 	const char *p = NULL;
 	Jsondb *new_db = NULL;
@@ -203,7 +203,7 @@ bool Jsondb_hasNetwork(const uint64_t networkId)
 	return jsondb_find(networkId) == NULL ? false:true;
 }
 
-bool Jsondb_getNetwork(const uint64_t networkId, json_object *config)
+bool Jsondb_getNetwork(const uint64_t networkId, json_object **config)
 {
 	Jsondb *pdb = NULL;
 	
@@ -211,7 +211,7 @@ bool Jsondb_getNetwork(const uint64_t networkId, json_object *config)
 	if(!pdb){
 		return false;
 	}
-	config = json_tokener_parse(pdb->config);
+	*config = json_tokener_parse(pdb->config);
 	return true;
 }
 
@@ -253,7 +253,7 @@ int Jsondb_getNetworkAndMember(const uint64_t networkId,const uint64_t nodeId, j
 	return 3;
 }
 
-bool Jsondb_getNetworkMember(const uint64_t networkId,const uint64_t nodeId, json_object *memberConfig){
+bool Jsondb_getNetworkMember(const uint64_t networkId,const uint64_t nodeId, json_object **memberConfig){
 	Jsondb *pdb = NULL;
 	JsondbMembers *pjm = NULL;
 
@@ -267,7 +267,7 @@ bool Jsondb_getNetworkMember(const uint64_t networkId,const uint64_t nodeId, jso
 		return false;
 	}
 	
-	memberConfig = json_tokener_parse(pjm->MemberConfig);
+	*memberConfig = json_tokener_parse(pjm->MemberConfig);
 	return true;
 }
 
@@ -427,6 +427,7 @@ static void _recomputeSummaryInfo(const uint64_t networkId)
 			}
 			json_object *mips = json_object_object_get(mcfg, "ipAssignments");
 			if(json_type_array == json_object_get_type(mips)){
+				INIT_LIST_HEAD(&(ns->allocatedIps.list));
 				for(i = 0; i < json_object_array_length(mips); i++){
 					p = json_object_get_string(json_object_array_get_idx(mips, i));
 					pil = malloc(sizeof(InetAddrList));

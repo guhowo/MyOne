@@ -7,12 +7,27 @@ CertificateOfMembership * CertificateOfMembership_init(void)
 {
 	CertificateOfMembership *p = NULL;
 
-	p = malloc(sizeof(CertificateOfMembership));
+	p = (CertificateOfMembership *)malloc(sizeof(CertificateOfMembership));
 	if(p){
 		memset(p,0,sizeof(CertificateOfMembership));
 	}
 
 	return p;
+}
+
+CertificateOfMembership *CertificateOfMembership_init2(uint64_t timestamp,uint64_t timestampMaxDelta,uint64_t nwid,const Address issuedTo)
+{
+	CertificateOfMembership *p=CertificateOfMembership_init();
+	p->qualifiers[0].id = COM_RESERVED_ID_TIMESTAMP;
+	p->qualifiers[0].value = timestamp;
+	p->qualifiers[0].maxDelta = timestampMaxDelta;
+	p->qualifiers[1].id = COM_RESERVED_ID_NETWORK_ID;
+	p->qualifiers[1].value = nwid;
+	p->qualifiers[1].maxDelta = 0;
+	p->qualifiers[2].id = COM_RESERVED_ID_ISSUED_TO;
+	p->qualifiers[2].value = issuedTo;
+	p->qualifiers[2].maxDelta = 0xffffffffffffffffULL;
+	p->qualifierCount = 3;
 }
 
 bool CertificateOfMembership_sign(const Identity *with, CertificateOfMembership *com)
@@ -21,18 +36,18 @@ bool CertificateOfMembership_sign(const Identity *with, CertificateOfMembership 
 	unsigned int ptr = 0;
 	unsigned int i;
 	
-	for(i=0; i<com->_qualifierCount; ++i) {
-		buf[ptr++] = Utils_hton_u64(com->_qualifiers[i].id);
-		buf[ptr++] = Utils_hton_u64(com->_qualifiers[i].value);
-		buf[ptr++] = Utils_hton_u64(com->_qualifiers[i].maxDelta);
+	for(i=0; i<com->qualifierCount; ++i) {
+		buf[ptr++] = Utils_hton_u64(com->qualifiers[i].id);
+		buf[ptr++] = Utils_hton_u64(com->qualifiers[i].value);
+		buf[ptr++] = Utils_hton_u64(com->qualifiers[i].maxDelta);
 	}
 
 	if(!C25519_has_PrivateKey(with->_privateKey)){
-		com->_signedBy = 0;
+		com->signedBy = 0;
 		return false;
 	}
-	C25519_sign4(com->_signature, with->_privateKey, with->_publicKey, buf, ptr * sizeof(uint64_t));
-	com->_signedBy = with->_address;
+	C25519_sign4(com->signature, with->_privateKey, with->_publicKey, buf, ptr * sizeof(uint64_t));
+	com->signedBy = with->_address;
 	return true;
 }
 
@@ -40,16 +55,16 @@ void CertificateOfMembership_serialize(Buffer *b, CertificateOfMembership *com)
 {
 	int i;
 	append(b, (uint8_t)1);
-	append_uint16(b, (uint16_t)com->_qualifierCount);
-	for(i=0; i < com->_qualifierCount; ++i) {
-		append_uint64(b, com->_qualifiers[i].id);
-		append_uint64(b, com->_qualifiers[i].value);
-		append_uint64(b, com->_qualifiers[i].maxDelta);
+	append_uint16(b, (uint16_t)com->qualifierCount);
+	for(i=0; i < com->qualifierCount; ++i) {
+		append_uint64(b, com->qualifiers[i].id);
+		append_uint64(b, com->qualifiers[i].value);
+		append_uint64(b, com->qualifiers[i].maxDelta);
 	}
 	
-	Address_AppendTo(b, com->_signedBy);
-	if (com->_signedBy){
-		append_databylen(b, com->_signature, ZT_C25519_SIGNATURE_LEN);
+	Address_AppendTo(b, com->signedBy);
+	if (com->signedBy){
+		append_databylen(b, com->signature, ZT_C25519_SIGNATURE_LEN);
 	}
 	return;
 }
@@ -61,8 +76,8 @@ unsigned int CertificateOfMembership_deserialize(Buffer *b, unsigned int startAt
 	uint64_t lastId = 0;
 	unsigned int i;
 	
-	com->_qualifierCount = 0;
-	com->_signedBy = 0;
+	com->qualifierCount = 0;
+	com->signedBy = 0;
 
 	if (b->b[p++] != 1){
 		printf("invalid object.\n");
@@ -81,23 +96,23 @@ unsigned int CertificateOfMembership_deserialize(Buffer *b, unsigned int startAt
 			lastId = qid;
 		}
 		
-		if (com->_qualifierCount < ZT_NETWORK_COM_MAX_QUALIFIERS) {
-			com->_qualifiers[com->_qualifierCount].id = qid;
-			com->_qualifiers[com->_qualifierCount].value = at_u64(b, p + 8);
-			com->_qualifiers[com->_qualifierCount].maxDelta = at_u64(b, p + 16);
+		if (com->qualifierCount < ZT_NETWORK_COM_MAX_QUALIFIERS) {
+			com->qualifiers[com->qualifierCount].id = qid;
+			com->qualifiers[com->qualifierCount].value = at_u64(b, p + 8);
+			com->qualifiers[com->qualifierCount].maxDelta = at_u64(b, p + 16);
 			p += 24;
-			++(com->_qualifierCount);
+			++(com->qualifierCount);
 		} else {
 			printf("too many qualifiers\n");
 			return 0;
 		}
 	}
 
-	Address_SetTo(b->b + p, ZT_ADDRESS_LENGTH, &(com->_signedBy));
+	Address_SetTo(b->b + p, ZT_ADDRESS_LENGTH, &(com->signedBy));
 	p += ZT_ADDRESS_LENGTH;
 
-	if (com->_signedBy) {
-		memcpy(com->_signature, b->b + p, ZT_C25519_SIGNATURE_LEN);
+	if (com->signedBy) {
+		memcpy(com->signature, b->b + p, ZT_C25519_SIGNATURE_LEN);
 		p += ZT_C25519_SIGNATURE_LEN;
 	}
 

@@ -35,6 +35,7 @@ extern "C" {
 #define JSON_IS_DOUBLE(obj) (json_object_get_type(obj) == json_type_double)
 #define JSON_IS_NUMBER(obj) (json_object_get_type(obj) == json_type_int || json_object_get_type(obj) == json_type_double)
 #define JSON_INT(obj, id) (json_object_get_int(json_object_object_get(obj,id)))
+#define JSON_HAVE_OBJECT(obj, key) (json_object_object_get(obj, key) != NULL)
 
 
 #ifdef __cplusplus

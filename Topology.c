@@ -340,3 +340,45 @@ PeerNode *Topology_GetPeerNode(Address addr){
 
 }
 
+/*
+Peer *Topology_getUpstreamPeer(const Address *avoid,unsigned int avoidCount,bool strictAvoid)
+{
+
+	const uint64_t now = RR->now;
+	unsigned int bestQualityOverall = ~((unsigned int)0);
+	unsigned int bestQualityNotAvoid = ~((unsigned int)0);
+	Peer *bestOverall = (const Peer *)0;
+	Peer *bestNotAvoid = (const Peer *)0;
+
+	upstreamAddress *a=NULL;
+	list_for_each_entry(a, &pupstreams->list, list) {
+		const Peer *p = _peers.get(*a);
+		if (p) {
+			bool avoiding = false;
+			for(unsigned int i=0;i<avoidCount;++i) {
+				if (avoid[i] == p->id._address) {
+					avoiding = true;
+					break;
+				}
+			}
+			const unsigned int q = (*p)->relayQuality(now);
+			if (q <= bestQualityOverall) {
+				bestQualityOverall = q;
+				bestOverall = &(*p);
+			}
+			if ((!avoiding)&&(q <= bestQualityNotAvoid)) {
+				bestQualityNotAvoid = q;
+				bestNotAvoid = &(*p);
+			}
+		}
+	}
+
+	if (bestNotAvoid) {
+		return *bestNotAvoid;
+	} else if ((!strictAvoid)&&(bestOverall)) {
+		return *bestOverall;
+	}
+
+	return SharedPtr<Peer>();
+}*/
+

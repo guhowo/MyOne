@@ -5,9 +5,9 @@
 #include "CertificateOfMembership.h"
 #include "NetworkConfig.h"
 
-#define ZT_NETWORK_MAX_INCOMING_UPDATES 3
-#define ZT_NETWORKCONFIG_DICT_CAPACITY    1024*5//(1024 + (sizeof(ZT_VirtualNetworkRule) * ZT_MAX_NETWORK_RULES) + (sizeof(Capability) * ZT_MAX_NETWORK_CAPABILITIES) + (sizeof(Tag) * ZT_MAX_NETWORK_TAGS) + (sizeof(CertificateOfOwnership) * ZT_MAX_CERTIFICATES_OF_OWNERSHIP))
-#define ZT_NETWORK_MAX_UPDATE_CHUNKS ((ZT_NETWORKCONFIG_DICT_CAPACITY / 1024) + 1)
+//#define ZT_NETWORK_MAX_INCOMING_UPDATES 3
+//#define ZT_NETWORKCONFIG_DICT_CAPACITY    (1024 + (sizeof(ZT_VirtualNetworkRule) * ZT_MAX_NETWORK_RULES) + (sizeof(Capability) * ZT_MAX_NETWORK_CAPABILITIES) + (sizeof(Tag) * ZT_MAX_NETWORK_TAGS) + (sizeof(CertificateOfOwnership) * ZT_MAX_CERTIFICATES_OF_OWNERSHIP))
+//#define ZT_NETWORK_MAX_UPDATE_CHUNKS ((ZT_NETWORKCONFIG_DICT_CAPACITY / 1024) + 1)
 
 typedef uint64_t MAC;
 

@@ -19,9 +19,9 @@ typedef struct{
 
 void Tag_serialize(Buffer *buf,const bool forSign, Tag *tag);
 unsigned int Tag_deserialize(Buffer *buf,unsigned int startAt, Tag *tag);
-static inline int Tag_compare(Tag *a,Tag *b)
+static inline int Tag_compare(const void *a,const void *b)
 {
-	return (a->id < b->id);
+	return (((Tag *)a)->id < ((Tag *)b)->id);
 }
 
 #endif

@@ -237,4 +237,8 @@ bool Identity_LocallyValidate(Identity *id)
 		(digest[63] == addrb[4]));
 }
 
+bool Identity_hasPrivate(Identity *id)
+{
+	return C25519_has_PrivateKey(id->_privateKey);
+}
 

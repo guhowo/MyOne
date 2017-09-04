@@ -9,6 +9,7 @@
 #include "Constants.h"
 #include "Buffer.h"
 #include "Peer.h"
+#include "ZeroTierOne.h"
 
 #define ZT_PROTO_VERSION 9
 #define ZT_PROTO_CIPHER_SUITE__C25519_POLY1305_NONE 0
@@ -87,7 +88,7 @@ void Packet(Buffer *buf, const Address dest, const Address source, const enum Ve
 void Packet_SetAddress(Buffer *buf, const Address addr);
 void sendHELLO(Peer *peer,const InetAddress *localAddr,const InetAddress *atAddress,uint64_t _now,unsigned int counter);
 bool udpSend(const struct sockaddr *remoteAddress,const Buffer *buf);
-bool Packet_trySend(const Buffer *buf, bool flag);
+bool Packet_trySend(Buffer *buf, bool flag);
 void Packet_Armor(Buffer *buf, const void *key,bool encryptPayload,unsigned int counter);
 bool Packet_Dearmor(Buffer *buf, const void *key);
 void Packet_CryptField(const void *key,unsigned int start,unsigned int len);

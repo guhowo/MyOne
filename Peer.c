@@ -36,6 +36,20 @@ void attemptToContactAt(Peer *peer,InetAddress *localAddr,InetAddress *atAddress
 	sendHELLO(peer,localAddr,atAddress,now,counter);
 }
 
+void tryMemorizedPath(Peer *peer,uint64_t now)
+{
+/*
+	if ((now - peer->lastTriedMemorizedPath) >= ZT_TRY_MEMORIZED_PATH_INTERVAL) {
+		peer->lastTriedMemorizedPath = now;
+		InetAddress mp;
+		if (RR->node->externalPathLookup(tPtr,_id.address(),-1,mp)) {
+			attemptToContactAt(peer,,mp,now,true,0);
+		}
+	}
+*/
+}
+
+
 void received(Peer *peer,	Path *path,const unsigned int hops,const uint64_t packetId,const enum Verb verb,const uint64_t inRePacketId,const enum Verb inReVerb,const bool trustEstablished)
 {
 	const uint64_t now = RR->now;

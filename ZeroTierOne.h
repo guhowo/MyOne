@@ -9,6 +9,9 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+#define MAX(a,b) (a)>(b)?(a):(b)
+#define MIN(a,b) (a)<(b)?(a):(b)
+
 /**
  * Default maximum time delta for COMs, tags, and capabilities
  *
@@ -65,6 +68,8 @@
  */
 #define ZT_NETWORKCONFIG_SPECIALIST_TYPE_CIRCUIT_TESTER 0x0000080000000000ULL
 
+// Network config version
+#define ZT_NETWORKCONFIG_VERSION 7
 
 // Network config version
 #define ZT_NETWORKCONFIG_REQUEST_METADATA_KEY_VERSION "v"

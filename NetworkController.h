@@ -19,6 +19,7 @@ enum ncErrorCode {
 	NC_ERROR_INTERNAL_SERVER_ERROR = 3
 };
 
+uint64_t prngState[2];
 
 //controller structure
 typedef struct _Networks{
@@ -43,8 +44,7 @@ typedef struct _EmbeddedNetworkController{
 
 
 //Member Status
-typedef struct MemberStatus
-{
+typedef struct {
 	uint64_t lastRequestTime;
 	int vMajor,vMinor,vRev,vProto;
 	Dictionary lastRequestMetaData;

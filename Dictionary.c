@@ -113,3 +113,93 @@ bool Dictionary_GetToBuffer(const Dictionary *metaData,const char *key,Buffer *d
 	}
 }
 
+bool Dictionary_add(Dictionary *d,const char *key,const char *value,int vlen)
+{
+	unsigned char *_d = d->b;
+	unsigned int i;
+	for(i=0;i<ZT_NETWORKCONFIG_METADATA_DICT_CAPACITY;++i) {
+		if (!_d[i]) {
+			unsigned int j = i;
+
+			if (j > 0) {
+				_d[j++] = (char)10;
+				if (j == ZT_NETWORKCONFIG_METADATA_DICT_CAPACITY) {
+					_d[i] = (char)0;
+					return false;
+				}
+			}
+
+			const char *p = key;
+			while (*p) {
+				_d[j++] = *(p++);
+				if (j == ZT_NETWORKCONFIG_METADATA_DICT_CAPACITY) {
+					_d[i] = (char)0;
+					return false;
+				}
+			}
+
+			_d[j++] = '=';
+			if (j == ZT_NETWORKCONFIG_METADATA_DICT_CAPACITY) {
+				_d[i] = (char)0;
+				return false;
+			}
+
+			p = value;
+			int k = 0;
+			while ( ((vlen < 0)&&(*p)) || (k < vlen) ) {
+				switch(*p) {
+					case 0:
+					case 13:
+					case 10:
+					case '\\':
+					case '=':
+						_d[j++] = '\\';
+						if (j == ZT_NETWORKCONFIG_METADATA_DICT_CAPACITY) {
+							_d[i] = (char)0;
+							return false;
+						}
+						switch(*p) {
+							case 0: _d[j++] = '0'; break;
+							case 13: _d[j++] = 'r'; break;
+							case 10: _d[j++] = 'n'; break;
+							case '\\': _d[j++] = '\\'; break;
+							case '=': _d[j++] = 'e'; break;
+						}
+						if (j == ZT_NETWORKCONFIG_METADATA_DICT_CAPACITY) {
+							_d[i] = (char)0;
+							return false;
+						}
+						break;
+					default:
+						_d[j++] = *p;
+						if (j == ZT_NETWORKCONFIG_METADATA_DICT_CAPACITY) {
+							_d[i] = (char)0;
+							return false;
+						}
+						break;
+				}
+				++p;
+				++k;
+			}
+
+			_d[j] = (char)0;
+			d->len = j+1;
+
+			return true;
+		}
+	}
+	return false;
+}
+
+bool Dictionary_addUint64(Dictionary *d,const char *key,uint64_t value)
+{
+	char tmp[32];
+	snprintf(tmp,sizeof(tmp),"%llx",(unsigned long long)value);
+	return Dictionary_add(d,key,tmp,-1);
+}
+
+bool Dictionary_addBuffer(Dictionary *d,const char *key,const Buffer *value)
+{
+	return Dictionary_add(d,key,(const char *)value->b,(int)value->len);
+}
+

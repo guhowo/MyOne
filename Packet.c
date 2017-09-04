@@ -134,10 +134,49 @@ bool udpSend(const struct sockaddr *remoteAddress,const Buffer *buf)
 	return ((long)sendto(udp_sockd,(void *)buf->b,buf->len,0,remoteAddress,(remoteAddress->sa_family == AF_INET6) ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in))==(long)buf->len);
 }
 
-bool Packet_trySend(const Buffer *buf, bool flag)
+bool Packet_trySend(Buffer *buf, bool encrypt)
 {
-	//need to do 
+	unsigned char *data=buf->b;
+	unsigned int len=buf->len;
+	Path *viaPath=NULL;
+	const uint64_t _now = RR->now;
+	Address destination;
+	memset(&destination,0,sizeof(destination));
+	Address_SetTo(data+ZT_PACKET_IDX_DEST,ZT_ADDRESS_LENGTH,&destination);
+	
+	Peer* peer=Peer_GotByAddress(destination);
+	if (peer) {
+		/* First get the best path, and if it's dead (and this is not a root)
+		 * we attempt to re-activate that path but this packet will flow
+		 * upstream. If the path comes back alive, it will be used in the future.
+		 * For roots we don't do the alive check since roots are not required
+		 * to send heartbeats "down" and because we have to at least try to
+		 * go somewhere. */
+
+		viaPath = peer->v4Path.p;
+		if ( (viaPath) && (!Path_Alive(viaPath,_now)) && (!Topology_IsInUpstreams(&peer->id._address)) ) {
+			if ((_now - viaPath->lastOut) > MAX((_now - viaPath->lastIn) * 4,(uint64_t)ZT_PATH_MIN_REACTIVATE_INTERVAL)) {
+				attemptToContactAt(peer,&viaPath->localAddress,&viaPath->addr,_now,false,nextOutgoingCounter(viaPath));
+				viaPath->lastOut = _now;
+			}
+
+			viaPath=NULL;
+		}
+
+		if (!viaPath) {
+			//need to do
+		}
+	} else {
+		//need to do 
+		//requestWhois(tPtr,destination);
+		return false; // if we are not in cluster mode, there is no way we can send without knowing the peer directly
+	}
+	
+	Packet_Armor(buf, peer->key,encrypt,nextOutgoingCounter(viaPath));
+	Path_Send(viaPath,buf,_now);
+	
 	return true;
+
 }
 
 

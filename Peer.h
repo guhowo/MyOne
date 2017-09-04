@@ -57,6 +57,7 @@ Peer *Peer_GotByAddress(Address addr);
 void setRemoteVersion(Peer *peer,unsigned int vproto,unsigned int vmaj,unsigned int vmin,unsigned int vrev);
 void received(Peer *peer,	Path *path,const unsigned int hops,const uint64_t packetId,const enum Verb verb,const uint64_t inRePacketId,const enum Verb inReVerb,const bool trustEstablished);
 void attemptToContactAt(Peer *peer,InetAddress *localAddr,InetAddress *atAddress,uint64_t now,bool sendFullHello,unsigned int counter);
+void tryMemorizedPath(Peer *peer,uint64_t now);
 static inline bool Peer_TrustEstablished(Peer *peer,const uint64_t now)  
 {
 	return ((now - peer->lastTrustEstablishedPacketReceived) < ZT_TRUST_EXPIRATION); 

@@ -3,7 +3,7 @@ one_src_files=avl_local.c Poly1305.c Utils.c SHA512.c salsa20.c C25519.c  \
 	InetAddress.c Address.c Identity.c Path.c Peer.c Packet.c Topology.c background.c \
 	IncomingPacket.c jsondb.c NetworkController.c Dictionary.c Revocation.c\
 	CertificateOfMembership.c  CertificateOfOwnership.c Capability.c  \
-	Tag.c one.c
+	NetworkConfig.c Tag.c one.c
 objects=$(patsubst %.c,%.o,$(one_src_files))
 json_c_files=$(shell ls json/*.c)
 json_h_files=$(shell ls json/*.h)
@@ -60,9 +60,9 @@ Tag.o:Tag.c Constants.h ZeroTierOne.h C25519.h Buffer.h Address.h Tag.h
 	cc $(CFLAGS) -c $^
 Dictionary.o:Dictionary.c
 	cc $(CFLAGS) -c $^ -I./json
-NetworkConfig.o:NetworkConfig.c
+NetworkConfig.o:NetworkConfig.c NetworkConfig.h
 	cc $(CFLAGS) -c $^
-NetworkController.o:NetworkController.c list.h ./json/json.h NetworkController.h
+NetworkController.o:NetworkController.c list.h ./json/json.h NetworkController.h NetworkConfig.h
 	cc $(CFLAGS) -c $^ -I./json
 background.o:background.c list.h RuntimeEnvironment.h Utils.h InetAddress.h Identity.h World.h Topology.h Packet.h background.h
 	cc $(CFLAGS) -c $^

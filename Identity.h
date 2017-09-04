@@ -36,6 +36,7 @@ bool Identity_FromString(const char *str, Identity *id);
 char *Identity_ToString(const Identity *id,bool includePrivate);
 bool Identity_Agree(const Identity *id,void *key,unsigned int klen);
 bool Identity_LocallyValidate(Identity *id);
+bool Identity_hasPrivate(Identity *id);
 
 /**
  * return true : two identities are the same

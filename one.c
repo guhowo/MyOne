@@ -27,11 +27,8 @@
 
 const int port = 4443;
 RuntimeEnvironment *RR = NULL;
-char * identity_secret = "61a7181461:0:5e5fb8e1b55867d50c7909a70df84fdb8f326321efb55de8da967adbde120b67941e0ab3c69cf382e76669536f3de3b3207e3b2c714aaf1a27cb3efb6ed12264:351e038c869ce2edf86fa5db160591ebc361ad55954e76d44e8bd03bdc3a1793334a03ec094d6a5661bbfd84a88ed630c3738a3ab79f49b8b2bf42892bad0678";
+char * identity_secret = "61f8500061:0:68c0d01e466d1c5b2ae12c7902759b513dc17ce529cb4eacc359f3b5da8c6931d4b07c8330321a5d9c43562a3fffea4c561204362594d78189717525eb5f2a0f:1523b81efb21f644a06ebd740292c037b94874d9f9aa24fe1274d6b4f6e2978f2a59a8cf7aea6b997079b3fbd77e7bbdd2236830a13d7c9976717c87ade25b8e";
 int udp_sockd;
-NetworkController controller;
-
-
 
 void myPoll(unsigned long timeout, int sockd, struct sockaddr_in addr)
 {
@@ -91,9 +88,10 @@ void init(uint64_t _now){
 	}
 
 	Topology_Init();
+	Node_Init();
 
 	Jsondb_load();
-//	NetworkController_Init();
+	NetworkController_Init();
 }
 
 
