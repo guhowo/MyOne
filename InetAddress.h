@@ -34,29 +34,7 @@ typedef struct _InetAddressList{
 	InetAddress InetAddr;
 }InetAddrList;
 
-
-static inline void InetAddress_Serialize(const InetAddress *InetAddr, Buffer *buf)
-{
-	// This is used in the protocol and must be the same as describe in places
-	// like VERB_HELLO in Packet.hpp.
-	switch(InetAddr->address.ss_family) {
-		case AF_INET:
-			append(buf, (uint8_t)0x04);
-			append_databylen(buf, &(((struct sockaddr_in *)(&InetAddr->address))->sin_addr.s_addr), 4);
-			append_uint16(buf, (uint16_t)port); // just in case sin_port != uint16_t
-			return;
-		case AF_INET6:
-			append(buf, (uint8_t)0x06);
-			append_databylen(buf, &(((struct sockaddr_in6 *)(&InetAddr->address))->sin6_addr.s6_addr), 16);
-			append_uint16(buf, (uint16_t)port); // just in case sin_port != uint16_t
-			return;
-		default:
-			append(buf, (uint8_t)0);
-			return;
-	}
-}
-
-
+void InetAddress_Serialize(const InetAddress *InetAddr, Buffer *buf);
 
 
 static inline unsigned int InetAddress_Deserialize(InetAddress *InetAddr, const unsigned char *b, unsigned int startAt)

@@ -3,8 +3,8 @@
 unsigned int InetAddress_netmaskBits(const InetAddress *addr)
 {
 	switch(addr->address.ss_family) {
-		case AF_INET: return ntohl((uint16_t)(((const struct sockaddr_in *)addr)->sin_port));
-		case AF_INET6: return ntohl((uint16_t)(((const struct sockaddr_in6 *)addr)->sin6_port));
+		case AF_INET: return ntohs((uint16_t)(((const struct sockaddr_in *)addr)->sin_port));
+		case AF_INET6: return ntohs((uint16_t)(((const struct sockaddr_in6 *)addr)->sin6_port));
 		default: return 0;
 	}
 }
@@ -105,6 +105,28 @@ bool InetAddress_compare(const InetAddress *a, const InetAddress *b)
 	}
 	return false;
 
+}
+
+
+void InetAddress_Serialize(const InetAddress *InetAddr, Buffer *buf)
+{
+	// This is used in the protocol and must be the same as describe in places
+	// like VERB_HELLO in Packet.hpp.
+	switch(InetAddr->address.ss_family) {
+		case AF_INET:
+			append(buf, (uint8_t)0x04);
+			append_databylen(buf, &(((struct sockaddr_in *)(&InetAddr->address))->sin_addr.s_addr), 4);
+			append_uint16(buf, (uint16_t)InetAddress_netmaskBits(InetAddr)); // just in case sin_port != uint16_t
+			return;
+		case AF_INET6:
+			append(buf, (uint8_t)0x06);
+			append_databylen(buf, &(((struct sockaddr_in6 *)(&InetAddr->address))->sin6_addr.s6_addr), 16);
+			append_uint16(buf, (uint16_t)InetAddress_netmaskBits(InetAddr)); // just in case sin_port != uint16_t
+			return;
+		default:
+			append(buf, (uint8_t)0);
+			return;
+	}
 }
 
 

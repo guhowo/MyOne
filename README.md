@@ -8,22 +8,13 @@
 8.networks的概念，啥时候生成的networks<br>
 9._doNETWORK_CONFIG_REQUEST中request函数用到了线程池，需要研究一下<br>
 10.planet在join流程中的作用？感觉没啥作用<br>
-
-
-Credential类需要实现(deserialize)
-CertficateofOwnership类需要移植(deserialize)
-CertificateofMembership类需要移植(deserialize)
-Revocation类需要实现(deserialize)
-capability类需要移植(deserialize)
-tag类需要实现(deserialize)
-以上几个类都在独立文件中：
-以上实现之后，可以得到Networconfig这个结构体
-
-bool _doMULTICAST_LIKE(Peer *peer,Path *path,Buffer *buf)未移植。
-core-dev\node\InetAddress.cpp netmaskbits函数实现貌似有问题，逻辑不对。待验证
-
-写member json文件时没有换行
-"tags": [ ]中有空格，可能需要去掉
+11.bool _doMULTICAST_LIKE(Peer *peer,Path *path,Buffer *buf)未移植。<br>
+12.core-dev\node\InetAddress.cpp netmaskbits函数实现貌似有问题，逻辑不对。待验证(已验证)<br>
+13.写member json文件时没有换行<br>
+14."tags": [ ]中有空格，可能需要去掉(已解决)<br>
+15.一些request报文没有走到tryDecode流程，原因需要进一步确认<br>
+16.controller写json文件时， "ipAssignments"写了多个IP地址<br>
+17.member的json文件为空时，controller二次启动出现段错误<br>
 
 
 ZeroTierOne发布：
@@ -35,8 +26,3 @@ ZeroTierOne发布：
 
 下载地址：git@git.tisp.com:yangdan/zerotier_deamon.git
 下一步计划：调试现有的功能，并完成Network响应组播报文doMulticast的功能
-
-遗留Bug:
-controller的member json文件删除后，join时生成内容为空的文件，再次启动controller出现段错误。
-controller 写json文件时，没有格式化，不影响功能，以后格式化；
-一些request报文没有走到tryDecode流程，原因需要进一步确认；

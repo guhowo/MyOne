@@ -133,9 +133,12 @@ void received(Peer *peer,	Path *path,const unsigned int hops,const uint64_t pack
 		}
 
 	}else if(Peer_TrustEstablished(peer,now)){
-		//need to do 
+		//need to do 		
+		const bool haveCluster = false;
+		if ( ((now - peer->lastDirectPathPushSent) >= ZT_DIRECT_PATH_PUSH_INTERVAL) && (!haveCluster) ) {
+			peer->lastDirectPathPushSent = now;		
+		}
 	}
-		
 
 }
 

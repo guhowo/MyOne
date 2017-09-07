@@ -494,7 +494,7 @@ void _request(uint64_t nwid,const InetAddress *fromAddr,uint64_t requestPacketId
 	// Determine whether and how member is authorized
 	const char *authorizedBy = (const char *)0;
 	bool autoAuthorized = false;
-	json_bool autoAuthCredentialType,autoAuthCredential;	
+	char *autoAuthCredentialType="",*autoAuthCredential="";	
 	json_object *joAuthorized=json_object_object_get(member,"authorized");
 	json_object *joPrivate=json_object_object_get(network,"private");
 	if(json_object_get_boolean(joAuthorized)) {
@@ -502,7 +502,7 @@ void _request(uint64_t nwid,const InetAddress *fromAddr,uint64_t requestPacketId
 	} else if(!json_object_get_boolean(joPrivate)) {
 		authorizedBy = "networkIsPublic";		
 		json_object *ahist=json_object_object_get(member,"authHistory");
-		if ((json_object_get_type(ahist)!=json_type_array)||(json_object_get_type(member)==json_type_null))
+		if (!JSON_IS_ARRAY(ahist)||(json_object_array_length(ahist)==0))
 			autoAuthorized = true;
 	} else {
 		//do nothing
@@ -513,19 +513,19 @@ void _request(uint64_t nwid,const InetAddress *fromAddr,uint64_t requestPacketId
 		json_object *joAuthorized=json_object_object_get(member,"authorized");
 		json_object_set_boolean(joAuthorized,true);
 		json_object *joNow=json_object_object_get(member,"lastAuthorizedTime");
-		json_object_set_double(joAuthorized,_now);
+		json_object_set_int64(joNow,_now);
 		
 		json_object *ah=json_object_new_object();		
 		json_object_object_add(ah, "a", json_object_new_boolean(true));
 		json_object_object_add(ah, "by", json_object_new_string(authorizedBy));
-		json_object_object_add(ah, "ts", json_object_new_double((double)_now));
-		json_object_object_add(ah, "ct", json_object_new_boolean(autoAuthCredentialType));		
-		json_object_object_add(ah, "c", json_object_new_boolean(autoAuthCredential));
+		json_object_object_add(ah, "ts", json_object_new_int64(_now));
+		json_object_object_add(ah, "ct", json_object_new_string(autoAuthCredentialType));		
+		json_object_object_add(ah, "c", json_object_new_string(autoAuthCredential));
 		json_object_object_add(member, "authHistory", ah);		
 		
 		json_object *revj = json_object_object_get(member,"revision");
-		double reValue=(json_object_get_type(revj)==json_type_double)||(json_object_get_type(revj)==json_type_int) ? ((uint64_t)revj + 1ULL) : 1ULL;
-		json_object_set_double(revj,reValue);	//set double or int?
+		double reValue = JSON_IS_NUMBER(revj) ? ((uint64_t)revj + 1ULL) : 1ULL;
+		json_object_set_int64(revj,reValue);
 
 	}
 
@@ -681,7 +681,7 @@ void _request(uint64_t nwid,const InetAddress *fromAddr,uint64_t requestPacketId
 			for(rk=0;rk<nc.routeCount;++rk) {
 				if ( (!nc.routes[rk].via.ss_family) && InetAddress_containsAddress((const InetAddress *)&(nc.routes[rk].target),&ip))
 					routedNetmaskBits = InetAddress_netmaskBits((const InetAddress *)(&(nc.routes[rk].target)));
-				}
+			}
 	
 			if (routedNetmaskBits > 0) {
 				if (nc.staticIpCount < ZT_MAX_ZT_ASSIGNED_ADDRESSES) {
@@ -811,7 +811,7 @@ void _request(uint64_t nwid,const InetAddress *fromAddr,uint64_t requestPacketId
 							((struct sockaddr_in *)&ip4)->sin_addr.s_addr = htonl(ip);
 							((struct sockaddr_in *)&ip4)->sin_port = htons((uint16_t)0);
 							if ( (routedNetmaskBits > 0) && (!findInetAddr(&ns->allocatedIps,&ip4)) ) {
-								json_object_array_add(ipAssignments,json_object_new_string(InetAddress_toString(&ip4)));
+								json_object_array_add(ipAssignments,json_object_new_string(inet_ntoa(((struct sockaddr_in *)&ip4)->sin_addr)));
 								if (nc.staticIpCount < ZT_MAX_ZT_ASSIGNED_ADDRESSES) {
 									struct sockaddr_in *const v4ip = (struct sockaddr_in *)(&(nc.staticIps[nc.staticIpCount++]));
 									v4ip->sin_family = AF_INET;
