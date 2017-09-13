@@ -9,11 +9,13 @@
 #include "Utils.h"
 #include "list.h"
 #include "RuntimeEnvironment.h"
+#include "Switch.h"
+#include "Constants.h"
 
 static uint64_t lastPingCheck = 0;
 extern RuntimeEnvironment *RR;
 
-void processBackgroundTasks(void *tptr,uint64_t _now,volatile uint64_t *nextBackgroundTaskDeadline)
+enum ZT_ResultCode processBackgroundTasks(void *tptr,uint64_t _now,volatile uint64_t *nextBackgroundTaskDeadline)
 {
 	unsigned long timeUntilNextPingCheck = ZT_PING_CHECK_INVERVAL;
 	const uint64_t timeSinceLastPingCheck = _now - lastPingCheck;
@@ -40,8 +42,15 @@ void processBackgroundTasks(void *tptr,uint64_t _now,volatile uint64_t *nextBack
 			}
 		}
 		// Run WHOIS to create Peer for any upstreams we could not contact (including pending moon seeds)
+		// WHOIS works only in controller, not in Planet
+		
+	}else {
+		timeUntilNextPingCheck -= (unsigned long)timeSinceLastPingCheck;
 	}
-	return;
+
+	*nextBackgroundTaskDeadline = _now +MAX(MIN(timeUntilNextPingCheck,Switch_doTimerTasks(_now)),(unsigned long)ZT_CORE_TIMER_TASK_GRANULARITY);
+	
+	return ZT_RESULT_OK;
 }
 
 

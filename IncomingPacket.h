@@ -14,7 +14,7 @@
 #define ZT_EXPECTING_REPLIES_BUCKET_MASK2 31
 
 void phyOnDatagram(int socket,const struct sockaddr *localAddr,const struct sockaddr *from,Buffer *buf);
-
+void expectReplyTo(const uint64_t packetId);
 bool expectingReplyTo(const uint64_t packetId);
 
 #endif

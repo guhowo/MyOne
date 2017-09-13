@@ -45,5 +45,4 @@ void CertificateOfMembership_serialize(Buffer *b, CertificateOfMembership *com);
 unsigned int CertificateOfMembership_deserialize(Buffer *b, unsigned int startAt, CertificateOfMembership *com);
 CertificateOfMembership *CertificateOfMembership_init2(uint64_t timestamp,uint64_t timestampMaxDelta,uint64_t nwid,const Address issuedTo);
 
-
 #endif

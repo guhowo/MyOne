@@ -46,4 +46,6 @@ static inline bool Path_Alive(Path *path,const uint64_t now)
 {
 	return ((now - path->lastIn) <= ZT_PATH_ALIVE_TIMEOUT); 
 }
+bool Path_isAddressValidForPath(const InetAddress *a);
+
 #endif

@@ -27,7 +27,6 @@ enum Thing
 	THING_IPV6_ADDRESS = 3
 };
 
-
 typedef struct{
 	uint64_t networkId;
 	uint64_t ts;
@@ -46,7 +45,5 @@ unsigned int CertificateOfOwnership_deserialize(Buffer *buf, unsigned int startA
 bool CertificateOfOwnership_sign(const Identity *signer, CertificateOfOwnership *coo);
 void CertificateOfOwnership_init(CertificateOfOwnership *coo,const uint64_t nwid,const uint64_t ts,const Address issuedTo,const uint32_t id);
 void CertificateOfOwnership_addThingIp(CertificateOfOwnership *coo,const InetAddress *ip);
-
-
 
 #endif

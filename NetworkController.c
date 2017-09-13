@@ -11,7 +11,7 @@
 #include"json/json_object.h"
 #include "CertificateOfMembership.h"
 #include "NetworkConfig.h"
-
+#include "Switch.h"
 
 // Min duration between requests for an address/nwid combo to prevent floods
 #define ZT_NETCONF_MIN_REQUEST_PERIOD 1000
@@ -311,7 +311,7 @@ void ncSendError(uint64_t nwid,uint64_t requestPacketId,const Address destinatio
 				break;
 		}
 		append_uint64(&outp,nwid);
-		Packet_trySend(&outp,true);
+		Switch_trySend(&outp,true);
 	}
 }
 
@@ -375,7 +375,7 @@ void NetworkController_InitMember(json_object *member)
 	return;
 }
 
-MemberStatus *getMemberStatus(const uint64_t nwid,const Identity *identity)
+MemberStatus * getMemberStatus(const uint64_t nwid,const Identity *identity)
 {
 	return findMemberStatus(nwid, identity);
 }
@@ -425,7 +425,7 @@ void ncSendConfig(uint64_t nwid,uint64_t requestPacketId,const Address destinati
 				append_databylen(&outp,(void *)&sig,ZT_C25519_SIGNATURE_LEN);
 
 				//outp.compress();
-				Packet_trySend(&outp,true);
+				Switch_trySend(&outp,true);
 				chunkIndex += chunkLen;
 			}
 		}
@@ -456,7 +456,6 @@ void _request(uint64_t nwid,const InetAddress *fromAddr,uint64_t requestPacketId
 	snprintf(nwids,sizeof(nwids),"%.16llx",nwid);
     /*--- network member need free */
 	int ret = Jsondb_getNetworkAndMember(nwid,identity->_address,&network,&member,&ns);
-	printf("ret == %d\n",ret);
 	if (ret==0) {	//no Network
 		ncSendError(nwid,requestPacketId,identity->_address,NC_ERROR_OBJECT_NOT_FOUND);
 		return;
@@ -681,10 +680,10 @@ void _request(uint64_t nwid,const InetAddress *fromAddr,uint64_t requestPacketId
 			for(rk=0;rk<nc.routeCount;++rk) {
 				if ( (!nc.routes[rk].via.ss_family) && InetAddress_containsAddress((const InetAddress *)&(nc.routes[rk].target),&ip))
 					routedNetmaskBits = InetAddress_netmaskBits((const InetAddress *)(&(nc.routes[rk].target)));
-			}
+				}
 	
 			if (routedNetmaskBits > 0) {
-				if (nc.staticIpCount < ZT_MAX_ZT_ASSIGNED_ADDRESSES) {
+				if (nc.staticIpCount < ZT_MAX_ZT_ASSIGNED_ADDRESSES) { 
 					InetAddress_setPort(routedNetmaskBits, &ip);
 					memcpy(&(nc.staticIps[nc.staticIpCount++]),&ip,sizeof(InetAddress));
 				}
@@ -875,5 +874,4 @@ void NetworkController_Init()
 	RR->localNetworkController=&controller;
 	INIT_LIST_HEAD(&mslist.list);
 }
-
 

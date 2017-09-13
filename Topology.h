@@ -61,6 +61,8 @@ void Topology_AppendCor(Buffer * buf);
 unsigned int Certificate_Deserialize(CertificateOfRepresentation *cor,const unsigned char *data, unsigned int len,unsigned int startAt);
 Path *Topology_GetPath(const InetAddress *local, const InetAddress *remote);
 bool Topology_IsInUpstreams(const Address *addr);
-
+Identity *Topology_getIdentity(Address zta);
+Peer *Topology_getUpstreamPeer(const Address *avoid,unsigned int avoidCount,bool strictAvoid);
+bool Topology_isProhibitedEndpoint(const Address ztaddr,const InetAddress *ipaddr);
 
 #endif

@@ -28,5 +28,4 @@ bool Dictionary_addUint64(Dictionary *d,const char *key,uint64_t value);
 bool Dictionary_addBuffer(Dictionary *d,const char *key,const Buffer *value);
 
 
-
 #endif

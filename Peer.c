@@ -2,6 +2,9 @@
 #include "Peer.h"
 #include "RuntimeEnvironment.h"
 #include "C25519.h"
+#include "IncomingPacket.h"
+#include "Packet.h"
+#include "Utils.h"
 
 extern RuntimeEnvironment *RR;
 
@@ -30,25 +33,24 @@ void setRemoteVersion(Peer *peer,unsigned int vproto,unsigned int vmaj,unsigned 
 	peer->vRevision = (uint16_t)vrev;
 }
 
-void attemptToContactAt(Peer *peer,InetAddress *localAddr,InetAddress *atAddress,uint64_t now,bool sendFullHello,unsigned int counter)
+void attemptToContactAt(Peer *peer,InetAddress *localAddr,InetAddress *atAddress,uint64_t _now,bool sendFullHello,unsigned int counter)
 {
-	//need to do 
-	sendHELLO(peer,localAddr,atAddress,now,counter);
-}
-
-void tryMemorizedPath(Peer *peer,uint64_t now)
-{
-/*
-	if ((now - peer->lastTriedMemorizedPath) >= ZT_TRY_MEMORIZED_PATH_INTERVAL) {
-		peer->lastTriedMemorizedPath = now;
-		InetAddress mp;
-		if (RR->node->externalPathLookup(tPtr,_id.address(),-1,mp)) {
-			attemptToContactAt(peer,,mp,now,true,0);
-		}
+	if ( (!sendFullHello) && (peer->vProto >= 5) && (!((peer->vMajor == 1)&&(peer->vMinor == 1)&&(peer->vRevision == 0))) ) {
+		Buffer outp;
+		Buffer_Init(&outp);
+		Packet(&outp,peer->id._address,RR->identity._address,VERB_ECHO);
+        const uint64_t PacketId = Utils_ntoh_u64((*(uint64_t *)outp.b));
+		expectReplyTo(PacketId);
+		Packet_Armor(&outp,peer->key,true,counter);
+		nodeWirePacketSendFunction((const struct sockaddr_storage *)localAddr,(struct sockaddr_storage *)&atAddress->address,&outp);
+	} else {
+		sendHELLO(peer,localAddr,atAddress,_now,counter);
 	}
-*/
 }
 
+void Peer_tryMemorizedPath(Peer *peer,uint64_t now)
+{
+}
 
 void received(Peer *peer,	Path *path,const unsigned int hops,const uint64_t packetId,const enum Verb verb,const uint64_t inRePacketId,const enum Verb inReVerb,const bool trustEstablished)
 {
@@ -142,5 +144,61 @@ void received(Peer *peer,	Path *path,const unsigned int hops,const uint64_t pack
 
 }
 
+bool Peer_rateGateOutgoingComRequest(Peer *peer,const uint64_t _now)
+{
+	if ((_now - peer->lastComRequestSent) >= ZT_PEER_GENERAL_RATE_LIMIT) {
+		peer->lastComRequestSent = _now;
+		return true;
+	}
+	return false;
+}
 
+/**
+ * Rate limit gate for inbound WHOIS requests
+ */
+bool Peer_rateGateInboundWhoisRequest(Peer *peer,const uint64_t _now)
+{
+	if ((_now - peer->lastWhoisRequestReceived) >= ZT_PEER_WHOIS_RATE_LIMIT) {
+		peer->lastWhoisRequestReceived = _now;
+		return true;
+	}
+	return false;
+}
+
+bool Peer_TrustEstablished(Peer *peer,const uint64_t _now)  
+{
+	return ((_now - peer->lastTrustEstablishedPacketReceived) < ZT_TRUST_EXPIRATION); 
+}
+
+bool Peer_sendDirect(Peer *peer,Buffer *buf,uint64_t now,bool force)
+{
+	uint64_t v6lr = 0;
+	if ( ((now - peer->v6Path.lr) < ZT_PEER_PATH_EXPIRATION) && (peer->v6Path.p) )
+		v6lr = peer->v6Path.p->lastIn;
+	uint64_t v4lr = 0;
+	if ( ((now - peer->v4Path.lr) < ZT_PEER_PATH_EXPIRATION) && (peer->v4Path.p) )
+		v4lr = peer->v4Path.p->lastIn;
+
+	if ( (v6lr > v4lr) && ((now - v6lr) < ZT_PATH_ALIVE_TIMEOUT) ) {
+		return Path_Send(peer->v6Path.p,buf,now);
+	} else if ((now - v4lr) < ZT_PATH_ALIVE_TIMEOUT) {
+		return Path_Send(peer->v4Path.p,buf,now);
+	} else if (force) {
+		if (v6lr > v4lr) {
+			return Path_Send(peer->v6Path.p,buf,now);
+		} else if (v4lr) {
+			return Path_Send(peer->v4Path.p,buf,now);
+		}
+	}
+
+	return false;
+}
+
+void Peer_getRendezvousAddresses(Peer *peer,uint64_t now,InetAddress *v4,InetAddress *v6)
+{
+	if (((now - peer->v4Path.lr) < ZT_PEER_PATH_EXPIRATION) && Path_Alive(peer->v4Path.p,now))
+		memcpy(v4, &(peer->v4Path.p->addr),sizeof(InetAddress));
+	if (((now - peer->v6Path.lr) < ZT_PEER_PATH_EXPIRATION) && Path_Alive(peer->v6Path.p,now))
+		memcpy(v6, &(peer->v6Path.p->addr),sizeof(InetAddress));
+}
 

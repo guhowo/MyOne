@@ -56,6 +56,7 @@ void NetworkController_Init();
 void NetworkController_Request(uint64_t nwid,const InetAddress *fromAddr,uint64_t requestPacketId,const Identity *identity,const Dictionary *metaData);
 void NetworkController_InitMember(json_object *member);
 void ncSendError(uint64_t nwid,uint64_t requestPacketId,const Address destination,enum ncErrorCode errorCode);
-
+void Node_Init(void);
+uint64_t prng();
 
 #endif

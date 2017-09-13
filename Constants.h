@@ -180,7 +180,7 @@
 /**
  * Delay between checks of peer pings, etc., and also related housekeeping tasks
  */
-#define ZT_PING_CHECK_INVERVAL 5000
+#define ZT_PING_CHECK_INVERVAL 5000*4
 
 /**
  * How frequently to send heartbeats over in-use paths

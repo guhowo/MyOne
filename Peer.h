@@ -56,12 +56,13 @@ void Peer_Init(Peer *p, Identity *peerId);
 Peer *Peer_GotByAddress(Address addr);
 void setRemoteVersion(Peer *peer,unsigned int vproto,unsigned int vmaj,unsigned int vmin,unsigned int vrev);
 void received(Peer *peer,	Path *path,const unsigned int hops,const uint64_t packetId,const enum Verb verb,const uint64_t inRePacketId,const enum Verb inReVerb,const bool trustEstablished);
-void attemptToContactAt(Peer *peer,InetAddress *localAddr,InetAddress *atAddress,uint64_t now,bool sendFullHello,unsigned int counter);
-void tryMemorizedPath(Peer *peer,uint64_t now);
-static inline bool Peer_TrustEstablished(Peer *peer,const uint64_t now)  
-{
-	return ((now - peer->lastTrustEstablishedPacketReceived) < ZT_TRUST_EXPIRATION); 
-}
+void attemptToContactAt(Peer *peer,InetAddress *localAddr,InetAddress *atAddress,uint64_t _now,bool sendFullHello,unsigned int counter);
+void Peer_tryMemorizedPath(Peer *peer,uint64_t now);
+bool Peer_rateGateOutgoingComRequest(Peer *peer,const uint64_t _now);
+bool Peer_rateGateInboundWhoisRequest(Peer *peer,const uint64_t _now);
+bool Peer_TrustEstablished(Peer *peer,const uint64_t _now);
+bool Peer_sendDirect(Peer *peer,Buffer *buf,uint64_t now,bool force);
+void Peer_getRendezvousAddresses(Peer *peer,uint64_t now,InetAddress *v4,InetAddress *v6);
 
 #endif
 

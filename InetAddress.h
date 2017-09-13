@@ -35,6 +35,7 @@ typedef struct _InetAddressList{
 }InetAddrList;
 
 void InetAddress_Serialize(const InetAddress *InetAddr, Buffer *buf);
+enum IpScope InetAddress_ipScope(const InetAddress *ipAddr);
 
 
 static inline unsigned int InetAddress_Deserialize(InetAddress *InetAddr, const unsigned char *b, unsigned int startAt)
@@ -98,7 +99,7 @@ static char *InetAddress_toString(const InetAddress *addr)
 	return "";
 }
 
-static inline void set(InetAddress *addr, const char *ip, unsigned int port)
+static inline void InetAddress_set(InetAddress *addr, const char *ip, unsigned int port)
 {
 	memset(addr,0,sizeof(InetAddress));
 	if(strstr(ip, ":")){
@@ -118,6 +119,26 @@ static inline void set(InetAddress *addr, const char *ip, unsigned int port)
 	return;
 }
 
+static inline void InetAddress_setFromBytes(InetAddress *addr, const char *ipBytes, int ipLen, unsigned int port){
+	memset(addr,0,sizeof(InetAddress));
+	if (ipLen == 4) {
+		uint32_t ipb[1];
+		memcpy(ipb,ipBytes,4);
+        
+		struct sockaddr_in *sin = (struct sockaddr_in *)addr;
+		sin->sin_family = AF_INET;
+		sin->sin_addr.s_addr = ipb[0];
+		sin->sin_port = htons((uint16_t)port);
+	} else if (ipLen == 16) {        
+        struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)addr;
+        sin6->sin6_family = AF_INET6;
+        sin6->sin6_port = htons((uint16_t)port);
+		memcpy(sin6->sin6_addr.s6_addr,ipBytes,16);
+	}
+    return;
+}
+
+
 static inline void InetAddress_fromString(const char *s, InetAddress *addr){
 	char *p, *q;
 	char buf[64];
@@ -126,11 +147,11 @@ static inline void InetAddress_fromString(const char *s, InetAddress *addr){
 	p = strstr(buf, "/");
 	if(!p){
 		//no port
-		set(addr, buf, 0);
+		InetAddress_set(addr, buf, 0);
 	}else{
 		p = strtok(buf, "/");
 		q = strtok(NULL, "/");
-		set(addr, p, atoi(q));
+		InetAddress_set(addr, p, atoi(q));
 	}
 	return;
 }
@@ -182,6 +203,7 @@ bool InetAddress_containsAddress(const InetAddress *self,const InetAddress *addr
 void InetAddress_setPort(unsigned int port, InetAddress *addr);
 const void *InetAddress_rawIpData(InetAddress *addr);
 bool InetAddress_compare(const InetAddress *a, const InetAddress *b);
+bool InetAddress_ipsEqual(const InetAddress *a, const InetAddress *b);
 
 #endif
 

@@ -13,16 +13,35 @@
 13.写member json文件时没有换行<br>
 14."tags": [ ]中有空格，可能需要去掉(已解决)<br>
 15.一些request报文没有走到tryDecode流程，原因需要进一步确认<br>
-16.controller写json文件时， "ipAssignments"写了多个IP地址<br>
+16.controller写json文件时， "ipAssignments"写了多个IP地址(已解决)<br>
 17.member的json文件为空时，controller二次启动出现段错误<br>
+18.peer地址分配好后，peers之间无法ping通<br>
+19.报文发送前的compress还没做，等到全部功能完成后再添加<br>
+20.PacketId 校验流程预留<br>
 
 
-ZeroTierOne发布：
-1、Planet和Network的四次交互Hello，并正确保存path信息；
-2、完成了Network的相应request报文的功能；
-3、完成了Network生成、保存配置信息的功能；
-4、完成了Network对peer的权限认证、证书认证的功能；
-5、完成了Network发送config信息给请求者的功能；
+ZeroTierOne进度：
+1、理清了peer加入member后如何同其他peers通信的流程
+2、Peers分配到IP地址后已经能正常up新的网卡
 
-下载地址：git@git.tisp.com:yangdan/zerotier_deamon.git
-下一步计划：调试现有的功能，并完成Network响应组播报文doMulticast的功能
+To-DO List:
+1、处理VERB_NETWORK_CREDENTIALS报文：addCredential函数需要移植，_gatherAuth数据结构需要重新设计 (工作量较小)
+功能：将报文解序列化得到com,cap,tag,coo,revocation，对应做addCredential操作。
+
+2、处理VERB_MULTICAST_LIKE报文：要移植Multicaster类，设计数据结构_groups、MulticastGroupMember、group status: key和group status的对应关系(工作量较大)
+功能：收到VERB_MULTICAST_LIKE后，将member加入的Multicaster groups中。
+
+3、处理VERB_MULTICAST_GATHER报文：gather函数要实现(工作量较小)
+功能：将multicast groups中的members(只包含ZT addr)发给peer
+
+4、处理VERB_WHOIS报文：requestWhois函数需要实现(工作量较小)
+功能：返回被查询的peer的Identity
+
+5、onRemotePacket函数中需要增加新的逻辑，主要函数包括sendDirect、getRendezvousAddresses、_shouldUnite、getUpstreamPeer(工作量还行)
+功能：发送VERB_RENDEZVOUS报文（返回members的实际IP地址和端口号），转发peer的push_direct_path的报文，hop+1
+
+6、处理Echo报文：新增_doECHO函数(工作量较小)
+功能：返回一个内容一样的报文
+
+
+

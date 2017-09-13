@@ -49,7 +49,11 @@
 #define ZT_PROTO_VERB_HELLO__OK__IDX_MINOR_VERSION (ZT_PROTO_VERB_HELLO__OK__IDX_MAJOR_VERSION + 1)
 #define ZT_PROTO_VERB_HELLO__OK__IDX_REVISION (ZT_PROTO_VERB_HELLO__OK__IDX_MINOR_VERSION + 1)
 
-
+#define ZT_PROTO_VERB_RENDEZVOUS_IDX_FLAGS (ZT_PACKET_IDX_PAYLOAD)
+#define ZT_PROTO_VERB_RENDEZVOUS_IDX_ZTADDRESS (ZT_PROTO_VERB_RENDEZVOUS_IDX_FLAGS + 1)
+#define ZT_PROTO_VERB_RENDEZVOUS_IDX_PORT (ZT_PROTO_VERB_RENDEZVOUS_IDX_ZTADDRESS + 5)
+#define ZT_PROTO_VERB_RENDEZVOUS_IDX_ADDRLEN (ZT_PROTO_VERB_RENDEZVOUS_IDX_PORT + 2)
+#define ZT_PROTO_VERB_RENDEZVOUS_IDX_ADDRESS (ZT_PROTO_VERB_RENDEZVOUS_IDX_ADDRLEN + 1)
 
 #define ZT_PROTO_VERB_HELLO_IDX_PROTOCOL_VERSION (ZT_PACKET_IDX_PAYLOAD)
 #define ZT_PROTO_VERB_HELLO_IDX_MAJOR_VERSION (ZT_PROTO_VERB_HELLO_IDX_PROTOCOL_VERSION + 1)
@@ -88,15 +92,22 @@ void Packet(Buffer *buf, const Address dest, const Address source, const enum Ve
 void Packet_SetAddress(Buffer *buf, const Address addr);
 void sendHELLO(Peer *peer,const InetAddress *localAddr,const InetAddress *atAddress,uint64_t _now,unsigned int counter);
 bool udpSend(const struct sockaddr *remoteAddress,const Buffer *buf);
-bool Packet_trySend(Buffer *buf, bool flag);
 void Packet_Armor(Buffer *buf, const void *key,bool encryptPayload,unsigned int counter);
 bool Packet_Dearmor(Buffer *buf, const void *key);
 void Packet_CryptField(const void *key,unsigned int start,unsigned int len);
 unsigned int Packet_Cipher(unsigned char *data);
+int nodeWirePacketSendFunction(const struct sockaddr_storage *localAddr,const struct sockaddr_storage *addr, const Buffer *buf);
+
 
 static inline unsigned int hops(unsigned char *data)
 {
 	return ((unsigned int)data[ZT_PACKET_IDX_FLAGS] & 0x07);
+}
+
+static inline unsigned char Packet_incrementHops(unsigned char *data)
+{
+	unsigned char *b = data+ZT_PACKET_IDX_FLAGS;
+	return (*b & 0xf8) | ((*b + 1) & 0x07);
 }
 
 static inline void Packet_SetCipher(Buffer *buf, unsigned int c)

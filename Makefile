@@ -2,7 +2,7 @@
 one_src_files=avl_local.c Poly1305.c Utils.c SHA512.c salsa20.c C25519.c  \
 	InetAddress.c Address.c Identity.c Path.c Peer.c Packet.c Topology.c background.c \
 	IncomingPacket.c jsondb.c NetworkController.c Dictionary.c Revocation.c\
-	CertificateOfMembership.c  CertificateOfOwnership.c Capability.c  \
+	CertificateOfMembership.c  CertificateOfOwnership.c Capability.c Switch.c \
 	NetworkConfig.c Tag.c one.c
 objects=$(patsubst %.c,%.o,$(one_src_files))
 json_c_files=$(shell ls json/*.c)
@@ -42,9 +42,11 @@ Peer.o:Peer.c avl_local.h C25519.h RuntimeEnvironment.h Packet.h Peer.h Identity
 	cc $(CFLAGS) -c $^
 Packet.o:Packet.c Constants.h Buffer.h InetAddress.h Address.h Peer.h Version.h salsa20.h RuntimeEnvironment.h Poly1305.h Packet.h
 	cc $(CFLAGS) -c $^
+Topology.o:Topology.c list.h Buffer.h InetAddress.h Peer.h World.h Address.h Identity.h Topology.h 	
+	cc $(CFLAGS) -c $^
 IncomingPacket.o:IncomingPacket.c IncomingPacket.h Version.h Path.h
 	cc $(CFLAGS) -c $^
-Topology.o:Topology.c list.h Buffer.h InetAddress.h Peer.h World.h Address.h Identity.h Topology.h 	
+Switch.o:Switch.c
 	cc $(CFLAGS) -c $^
 jsondb.o:jsondb.c list.h avl_local.h InetAddress.h Address.h ./json/json.h
 	cc $(CFLAGS) -c $^ -I./json

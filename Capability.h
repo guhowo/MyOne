@@ -25,7 +25,9 @@ typedef struct _Capability{
 }Capability;
 
 void Capability_serialize(Buffer *buf,const bool forSign, Capability *cb);
+void Capability_serializeRules(Buffer *buf,const ZT_VirtualNetworkRule *rules, unsigned int ruleCount);
 unsigned int Capability_deserialize(Buffer *buf,unsigned int startAt, Capability *cb);
+void Capability_deserializeRules(Buffer *buf, unsigned int *k, ZT_VirtualNetworkRule *rules, unsigned int *rc,const unsigned int maxRuleCount);
 static inline int Capability_compare(const void *a,const void *b)
 {
 	return (((Capability *)a)->id < ((Capability *)b)->id);	

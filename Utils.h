@@ -13,11 +13,6 @@
 #define bool int
 
 /**
- * Delay between checks of peer pings, etc., and also related housekeeping tasks
- */
-#define ZT_PING_CHECK_INVERVAL 5000
-
-/**
  * @return Current time in milliseconds since epoch
  */
 uint64_t now();
