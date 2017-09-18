@@ -35,5 +35,6 @@ bool Switch_send(Buffer *packet, bool encrypt);
 unsigned long Switch_doTimerTasks(uint64_t now);
 bool Switch_trySend(Buffer *buf, bool flag);
 bool Switch_shouldUnite(const uint64_t now,const Address source,const Address destination);
+void Switch_doAnythingWaitingForPeer(Peer *peer);
 
 #endif

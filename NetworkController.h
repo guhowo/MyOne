@@ -21,18 +21,6 @@ enum ncErrorCode {
 
 uint64_t prngState[2];
 
-//controller structure
-typedef struct _Networks{
-	struct list_head list;
-	uint64_t nwid;
-	//json_object network;
-	NetworkInfo network;
-	TREE *member;
-}Networks;
-
-Networks netWorks;
-
-
 //controller and JSONDB
 typedef struct _EmbeddedNetworkController{
 	uint64_t startTime;

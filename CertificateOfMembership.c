@@ -2,6 +2,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include "CertificateOfMembership.h"
+#include "Topology.h"
+#include "Switch.h"
+#include "Network.h"
 
 CertificateOfMembership * CertificateOfMembership_init(void)
 {
@@ -118,4 +121,51 @@ unsigned int CertificateOfMembership_deserialize(Buffer *b, unsigned int startAt
 
 	return (p - startAt);
 }
+
+uint64_t COM_networkId(CertificateOfMembership *com)
+{
+    unsigned int i=0;
+    for(i = 0;i<com->qualifierCount;++i) {
+        if (com->qualifiers[i].id == COM_RESERVED_ID_NETWORK_ID)
+            return com->qualifiers[i].value;
+    }
+    return 0ULL;
+}
+
+
+int CertificateOfMembership_verify(CertificateOfMembership *com)
+{
+    unsigned int i;
+	if ((!com->signedBy)||(com->signedBy != (COM_networkId(com) >> 24) & 0xffffffffffULL)||(com->qualifierCount > ZT_NETWORK_COM_MAX_QUALIFIERS)){
+		return -1;
+    }
+
+    
+    Identity *id = Topology_getIdentity(com->signedBy);    
+
+    if(!id){
+        Switch_requestWhois(com->signedBy);
+        return 1;
+    }
+
+	uint64_t buf[ZT_NETWORK_COM_MAX_QUALIFIERS * 3];
+	unsigned int ptr = 0;
+	for(i = 0;i < com->qualifierCount; ++i) {
+		buf[ptr++] = Utils_hton_u64(com->qualifiers[i].id);
+		buf[ptr++] = Utils_hton_u64(com->qualifiers[i].value);
+		buf[ptr++] = Utils_hton_u64(com->qualifiers[i].maxDelta);
+	}
+	return (C25519_verify(id->_publicKey, buf, ptr * sizeof(uint64_t), com->signature) ? 0 : -1);
+}
+
+Address COM_issuedTo(CertificateOfMembership *com)
+{
+    unsigned int i = 0;
+    for(i = 0;i < com->qualifierCount; ++i) {
+        if (com->qualifiers[i].id == COM_RESERVED_ID_ISSUED_TO)
+            return com->qualifiers[i].value;
+    }
+    return 0;
+}
+
 

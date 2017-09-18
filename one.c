@@ -98,6 +98,7 @@ void init(uint64_t _now)
 
     Jsondb_load();
     NetworkController_Init();
+    Multicaster_init();
 }
 
 

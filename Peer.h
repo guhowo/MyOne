@@ -18,11 +18,6 @@ typedef struct _Peer{
 
 	Mutex _paths_m;
 
-	Identity _id;
-
-	unsigned int _latency;
-	unsigned int _directPathPushCutoffCount;
-	unsigned int _credentialsCutoffCount;
 
 	AtomicCounter __refCount;
 	*/
@@ -50,6 +45,8 @@ typedef struct _Peer{
 	uint16_t vMajor;
 	uint16_t vMinor;
 	uint16_t vRevision;	
+    unsigned int directPathPushCutoffCount;
+    unsigned int credentialsCutoffCount;
 }Peer;
 
 void Peer_Init(Peer *p, Identity *peerId);

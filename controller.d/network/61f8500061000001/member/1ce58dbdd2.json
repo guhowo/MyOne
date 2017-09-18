@@ -1,0 +1,33 @@
+{
+ "activeBridge": false,
+ "address": "1ce58dbdd2",
+ "authHistory": [
+  {
+   "a": true,
+   "by": "networkIsPublic",
+   "c": null,
+   "ct": null,
+   "ts": 1503374825458
+  }
+ ],
+ "authorized": true,
+ "capabilities": [],
+ "creationTime": 1503374820486,
+ "id": "1ce58dbdd2",
+ "identity": "1ce58dbdd2:0:878568f0f2ab6306c8032e01a358cd6764d16445dbf87157e8448389eab16d16358c7890fa2ce10c14bb8c8577681b3afa17373372b727b1613826169e7a415c",
+ "ipAssignments": [
+  "119.23.226.134"
+ ],
+ "lastAuthorizedTime": 1503374825458,
+ "lastDeauthorizedTime": 0,
+ "noAutoAssignIps": false,
+ "nwid": "61f8500061000001",
+ "objtype": "member",
+ "physicalAddr": "119.23.0.97/9993",
+ "revision": 1,
+ "tags": [],
+ "vMajor": 1,
+ "vMinor": 2,
+ "vProto": 9,
+ "vRev": 5
+}

@@ -44,5 +44,8 @@ bool CertificateOfMembership_sign(const Identity *with, CertificateOfMembership 
 void CertificateOfMembership_serialize(Buffer *b, CertificateOfMembership *com);
 unsigned int CertificateOfMembership_deserialize(Buffer *b, unsigned int startAt, CertificateOfMembership *com);
 CertificateOfMembership *CertificateOfMembership_init2(uint64_t timestamp,uint64_t timestampMaxDelta,uint64_t nwid,const Address issuedTo);
+int CertificateOfMembership_verify(CertificateOfMembership *com);
+uint64_t COM_networkId(CertificateOfMembership *com);
+Address COM_issuedTo(CertificateOfMembership *com);
 
 #endif

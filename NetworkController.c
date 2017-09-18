@@ -270,22 +270,10 @@ static bool _parseRule(json_object *r,ZT_VirtualNetworkRule *rule)
 	return false;
 }
 
-
-Networks *findNetwork(uint64_t nwid)
-{
-	Networks *tmp;
-	list_for_each_entry(tmp, &netWorks.list, list) {
-		if(tmp->nwid == nwid)
-			return tmp;
-	}
-	return NULL;
-
-}
-
 void ncSendError(uint64_t nwid,uint64_t requestPacketId,const Address destination,enum ncErrorCode errorCode)
 {
 	if (destination == RR->identity._address) {
-		Networks *n=findNetwork(nwid);
+		Networks *n=Network_findNetwork(nwid);
 		if (!n) return;
 		switch(errorCode) {
 			case NC_ERROR_OBJECT_NOT_FOUND:

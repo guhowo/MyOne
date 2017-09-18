@@ -4,12 +4,20 @@
 #include "ZeroTierOne.h"
 #include "CertificateOfMembership.h"
 #include "NetworkConfig.h"
-
-//#define ZT_NETWORK_MAX_INCOMING_UPDATES 3
-//#define ZT_NETWORKCONFIG_DICT_CAPACITY    (1024 + (sizeof(ZT_VirtualNetworkRule) * ZT_MAX_NETWORK_RULES) + (sizeof(Capability) * ZT_MAX_NETWORK_CAPABILITIES) + (sizeof(Tag) * ZT_MAX_NETWORK_TAGS) + (sizeof(CertificateOfOwnership) * ZT_MAX_CERTIFICATES_OF_OWNERSHIP))
-//#define ZT_NETWORK_MAX_UPDATE_CHUNKS ((ZT_NETWORKCONFIG_DICT_CAPACITY / 1024) + 1)
+#include "Address.h"
+#include "Buffer.h"
+#include "avl_local.h"
+#include "Peer.h"
 
 typedef uint64_t MAC;
+
+enum AddCredentialResult
+{
+	ADD_REJECTED,
+	ADD_ACCEPTED_NEW,
+	ADD_ACCEPTED_REDUNDANT,
+	ADD_DEFERRED_FOR_WHOIS
+};
 
 typedef struct _IncomingConfigChunk
 {
@@ -42,10 +50,22 @@ typedef struct network{
 	int portError; // return value from port config callback
 
 	//Hashtable<Address,Membership> _memberships;
-
 }NetworkInfo;
 
+//controller structure
+typedef struct _Networks{
+	struct list_head list;
+	uint64_t nwid;
+	//json_object network;
+	NetworkInfo network;
+	TREE *member;
+}Networks;
 
+Networks netWorks;
 
+Networks *Network_findNetwork(uint64_t nwid);
+uint64_t Network_handleConfigChunk(NetworkInfo *nwInfo,const uint64_t packetId,const Address source,const Buffer *chunk,unsigned int ptr);
+bool Network_gate(NetworkInfo *network, const Peer *peer);
+MAC MAC_setTo(const void *bits,unsigned int len);
 
 #endif

@@ -3,7 +3,7 @@ one_src_files=avl_local.c Poly1305.c Utils.c SHA512.c salsa20.c C25519.c  \
 	InetAddress.c Address.c Identity.c Path.c Peer.c Packet.c Topology.c background.c \
 	IncomingPacket.c jsondb.c NetworkController.c Dictionary.c Revocation.c\
 	CertificateOfMembership.c  CertificateOfOwnership.c Capability.c Switch.c \
-	NetworkConfig.c Tag.c one.c
+	Network.c Multicaster.c NetworkConfig.c Tag.c one.c
 objects=$(patsubst %.c,%.o,$(one_src_files))
 json_c_files=$(shell ls json/*.c)
 json_h_files=$(shell ls json/*.h)
@@ -44,8 +44,6 @@ Packet.o:Packet.c Constants.h Buffer.h InetAddress.h Address.h Peer.h Version.h 
 	cc $(CFLAGS) -c $^
 Topology.o:Topology.c list.h Buffer.h InetAddress.h Peer.h World.h Address.h Identity.h Topology.h 	
 	cc $(CFLAGS) -c $^
-IncomingPacket.o:IncomingPacket.c IncomingPacket.h Version.h Path.h
-	cc $(CFLAGS) -c $^
 Switch.o:Switch.c
 	cc $(CFLAGS) -c $^
 jsondb.o:jsondb.c list.h avl_local.h InetAddress.h Address.h ./json/json.h
@@ -64,8 +62,14 @@ Dictionary.o:Dictionary.c
 	cc $(CFLAGS) -c $^ -I./json
 NetworkConfig.o:NetworkConfig.c NetworkConfig.h
 	cc $(CFLAGS) -c $^
+Network.o:Network.c
+	cc $(CFLAGS) -c $^
+Multicaster.o:Multicaster.c Multicaster.h Network.h
+	cc $(CFLAGS) -c $^
 NetworkController.o:NetworkController.c list.h ./json/json.h NetworkController.h NetworkConfig.h
 	cc $(CFLAGS) -c $^ -I./json
+IncomingPacket.o:IncomingPacket.c IncomingPacket.h Version.h Path.h Network.h
+	cc $(CFLAGS) -c $^
 background.o:background.c list.h RuntimeEnvironment.h Utils.h InetAddress.h Identity.h World.h Topology.h Packet.h background.h
 	cc $(CFLAGS) -c $^
 one.o:one.c avl_local.h Utils.h Address.h Identity.h RuntimeEnvironment.h Topology.h IncomingPacket.h Path.h

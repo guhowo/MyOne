@@ -5,6 +5,7 @@
 #include "Topology.h"
 #include "avl_local.h"
 #include "NetworkController.h"
+#include "Multicaster.h"
 
 typedef struct _RuntimeEnvironment{
 	Identity identity;
@@ -15,6 +16,7 @@ typedef struct _RuntimeEnvironment{
 
 	// This is set externally to an instance of this base class
 	NetworkController *localNetworkController;
+    Multicaster *mc;
 
 }RuntimeEnvironment;
 

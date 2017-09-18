@@ -12,6 +12,13 @@
 #include "Dictionary.h"
 #include "NetworkController.h"
 #include "Switch.h"
+#include "Network.h"
+#include "Multicaster.h"
+#include "CertificateOfMembership.h"
+#include "CertificateOfOwnership.h"
+#include "Tag.h"
+#include "Revocation.h"
+#include "Capability.h"
 
 extern RuntimeEnvironment *RR;
 // For tracking packet IDs to filter out OK/ERROR replies to packets we did not send
@@ -357,10 +364,171 @@ bool _doRENDEZVOUS(Peer *peer,Path *path,Buffer *buf)
     return true;
 }
 
-
-
 bool _doMULTICAST_LIKE(Peer *peer,Path *path,Buffer *buf)
 {
+    const uint64_t now = RR->now;
+    uint64_t authOnNetwork[256]; // cache for approved network IDs
+    unsigned int authOnNetworkCount = 0;
+    Networks *network = NULL;
+    bool trustEstablished = false;
+    unsigned int ptr = 0, i;
+    unsigned char * data = buf->b;
+    int len = buf->len;
+	const uint64_t requestPacketId = Utils_ntoh_u64(*(uint64_t *)&data[ZT_PACKET_IDX_IV]);
+
+    for(ptr = ZT_PACKET_IDX_PAYLOAD; ptr < len; ptr +=18){
+        const uint64_t nwid = at_u64(buf, ptr);
+        bool auth = false;
+        for(i = 0; i < authOnNetworkCount; ++i){
+            if(nwid == authOnNetwork[i]){
+                auth = true;
+                break;
+            }
+        }
+        if(!auth){
+            if ((!network)||(network->nwid != nwid)){
+                network = Network_findNetwork(nwid);
+                bool authOnNet = false;
+                if((network)&&(Network_gate(&network->network, peer))){
+                    authOnNet = true;
+                }	
+                if (!authOnNet){
+					_sendErrorNeedCredentials(path, peer, buf, nwid);
+                }
+				trustEstablished |= authOnNet;
+				if (authOnNet||Multicaster_cacheAuthorized(peer->id._address, nwid, now)) {
+					auth = true;
+					if (authOnNetworkCount < 256) // sanity check, packets can't really be this big
+						authOnNetwork[authOnNetworkCount++] = nwid;
+				}
+			}
+
+			if (auth) {
+                MulticastGroup mg;
+                mg._mac = MAC_setTo(data + ptr + 8, 6);
+                mg._adi = at_u32(buf, ptr + 14);
+                Multicaster_add(now, nwid, &mg, peer->id._address);
+			}
+
+        }
+    }    
+	received(peer,path,hops(data),requestPacketId,VERB_MULTICAST_LIKE,0,VERB_NOP,trustEstablished);
+
+    return true;
+}
+
+
+bool _doNETWORK_CREDENTIALS(Peer *peer,Path *path,Buffer *buf)
+{
+    unsigned char *data=buf->b;
+    unsigned int len=buf->len;
+    Address source;
+    Address_SetTo(data + ZT_PACKET_IDX_SOURCE, ZT_ADDRESS_LENGTH, &source);
+    uint64_t packetId=Utils_ntoh_u64(*(uint64_t *)&data[ZT_PACKET_IDX_IV]);
+    
+    if (!Peer_rateGateCredentialsReceived(peer,RR->now)) {
+        printf("dropped NETWORK_CREDENTIALS from %s(%s): rate limit circuit breaker tripped\n",Address_ToString(source),InetAddress_toString(&path->addr));
+        return true;
+	}
+
+    CertificateOfMembership com;
+	Capability cap;
+	Tag tag;
+	Revocation revocation;
+	CertificateOfOwnership coo;
+	bool trustEstablished = false;
+
+	unsigned int p = ZT_PACKET_IDX_PAYLOAD;
+    while ((p < len)&&(data[p] != 0)) {
+		p += CertificateOfMembership_deserialize(buf,p,&com);
+		if (com.qualifierCount) {
+            uint64_t nwid=CertificateOfMembership_networkId(&com);
+			Networks *nw=Network_findNetwork(nwid);
+			if (nw) {
+                printf("_doNETWORK_CREDENTIALS: Find nwid in com\n");
+                return false;    
+			} else Multicaster_addCredential(&com,false);
+		}
+	}
+    ++p; // skip trailing 0 after COMs if present
+
+    if(p < len) {
+        const unsigned int numCapabilities = ntohs(*(uint16_t *)&data[p]);
+        p += 2;
+        unsigned int i;
+        for(i=0;i<numCapabilities;++i) {
+            p += Capability_deserialize(buf,p,&cap);
+            Networks *nw=Network_findNetwork(cap.nwid);
+            if(nw) {
+                printf("_doNETWORK_CREDENTIALS: Find nwid in Capabilities\n");
+                return false;
+            }
+        }
+        
+        if (p >= len) return true;
+        
+        const unsigned int numTags = ntohs(*(uint16_t *)&data[p]); 
+        p += 2;
+        for(i=0;i<numTags;++i) {
+            p += Tag_deserialize(buf,p,&tag);
+            Networks *nw=Network_findNetwork(tag.networkId);
+            if(nw) {
+                printf("_doNETWORK_CREDENTIALS: Find nwid in tag\n");
+                return false;
+            }
+        }
+
+        if (p >= len) return true;
+
+        const unsigned int numRevocations = ntohs(*(uint16_t *)&data[p]); 
+        p += 2;
+        for(i=0;i<numRevocations;++i) {
+            p += Revocation_deserialize(buf,p,&revocation);
+            Networks *nw=Network_findNetwork(revocation._networkId);
+            if(nw) {
+                printf("_doNETWORK_CREDENTIALS: Find nwid in Revocations\n");
+                return false;
+            }
+        }
+
+        if (p >= len) return true;
+
+        const unsigned int numCoos = ntohs(*(uint16_t *)&data[p]); 
+        p += 2;
+        for(i=0;i<numCoos;++i) {
+            p += CertificateOfOwnership_deserialize(buf,p,&coo);
+            Networks *nw=Network_findNetwork(coo.networkId);
+            if(nw) {
+                printf("_doNETWORK_CREDENTIALS: Find nwid in Coo\n");
+                return false;
+            }
+        }                
+    }
+
+	received(peer, path, hops(data),packetId,VERB_NETWORK_CREDENTIALS,0,VERB_NOP,trustEstablished);
+    
+    return true;
+}
+
+bool _doMULTICAST_GATHER(Peer *peer,Path *path,Buffer *buf)
+{
+    unsigned char *data = buf->b;
+    unsigned int len = buf->len;
+    const uint64_t nwid = Utils_ntoh_u64(*(uint64_t *)&data[ZT_PROTO_VERB_MULTICAST_GATHER_IDX_NETWORK_ID]);
+    const unsigned int flags = data[ZT_PROTO_VERB_MULTICAST_GATHER_IDX_FLAGS];
+    const unsigned int gatherLimit = ntohl(*(uint32_t *)&data[ZT_PROTO_VERB_MULTICAST_GATHER_IDX_GATHER_LIMIT]);
+
+    Networks *nw=Network_findNetwork(nwid);
+    if ((flags & 0x01) != 0) {
+        CertificateOfMembership com;
+        CertificateOfMembership_deserialize(buf,ZT_PROTO_VERB_MULTICAST_GATHER_IDX_COM,&com);
+        if(com.qualifierCount) {
+            if(nw) {
+
+            } else Multicaster_addCredential(&com,false);
+        }
+    }
+    
     return true;
 }
 
@@ -449,12 +617,23 @@ bool _doOK(Peer *peer,Path *path,Buffer *buf)
 				ptr += 2;
 				setRemoteVersion(peer,vProto,vMajor,vMinor,vRevision);
 				//maybe need to do iam
-			} break;
-		}
-		case VERB_NETWORK_CONFIG_REQUEST:
-		case VERB_WHOIS:
+			}
+		}   break;
+        case VERB_NETWORK_CONFIG_REQUEST: {
+            printf("_doOK : VERB_NETWORK_CONFIG_REQUEST\n");
+        }   break;
+		case VERB_WHOIS: {
+            if(findUpstream(peer->id._address)) {
+                Identity id;
+                Identity_Deserialize(&id,data,ZT_PROTO_VERB_WHOIS__OK__IDX_IDENTITY);
+                Peer *p=(Peer *)malloc(sizeof(Peer));
+                Peer_Init(p,&id);
+                Peer *peerAdded=Topology_AddPeer(p);
+                Switch_doAnythingWaitingForPeer(peerAdded);
+            }
+        }   break;
 		case VERB_MULTICAST_GATHER:
-		case VERB_MULTICAST_FRAME: 
+		case VERB_MULTICAST_FRAME:
 		default: 
 			printf("Other types of Packet\n");
 			break;
@@ -488,8 +667,10 @@ bool tryDecode(Path *path,Buffer *buf)
 				case VERB_OK:                         return _doOK(peer,path,buf);
 				case VERB_NETWORK_CONFIG_REQUEST:	  return _doNETWORK_CONFIG_REQUEST(peer,path,buf);
 				case VERB_MULTICAST_LIKE:			  return _doMULTICAST_LIKE(peer,path,buf);
+                case VERB_NETWORK_CREDENTIALS:        return _doNETWORK_CREDENTIALS(peer,path,buf);
 				case VERB_WHOIS:					  return _doWHOIS(peer,path,buf);
                 case VERB_RENDEZVOUS:                 return _doRENDEZVOUS(peer,path,buf);
+                case VERB_MULTICAST_GATHER:           return _doMULTICAST_GATHER(peer,path,buf);
 				default:
 					//peer->received(tPtr,_path,hops(),packetId(),v,0,Packet::VERB_NOP,false);
 					printf("ignore unknown verbs\n");
@@ -510,7 +691,8 @@ void onRemotePacket(Path *path,const InetAddress *localAddr,const InetAddress *f
 		/* LEGACY: before VERB_PUSH_DIRECT_PATHS, peers used broadcast
 		* announcements on the LAN to solve the 'same network problem.' We
 		* no longer send these, but we'll listen for them for a while to
-		* locate peers with versions <1.0.4. */		
+		* locate peers with versions <1.0.4. */
+		printf("Packet length is 13\n");
 	} else if(len > ZT_PROTO_MIN_FRAGMENT_LENGTH) {		// SECURITY: min length check is important since we do some C-style stuff below!
 		if(((uint8_t *)data)[ZT_PACKET_FRAGMENT_IDX_FRAGMENT_INDICATOR] == ZT_PACKET_FRAGMENT_INDICATOR) { // Handle fragment
 			if(!RR->pTopology->amRoot && !Path_TrustEstablished(path, RR->now)) { 

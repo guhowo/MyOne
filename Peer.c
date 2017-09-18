@@ -1,3 +1,4 @@
+#include <malloc.h>
 #include "avl_local.h"
 #include "Peer.h"
 #include "RuntimeEnvironment.h"
@@ -9,6 +10,7 @@
 extern RuntimeEnvironment *RR;
 
 void Peer_Init(Peer *p, Identity *peerId){
+    memset(p,0,sizeof(Peer));
 	C25519_agree(RR->identity._privateKey, peerId->_publicKey, p->key, ZT_PEER_SECRET_KEY_LENGTH);
 	memcpy(&(p->id), peerId, sizeof(Identity));
 }
@@ -201,4 +203,18 @@ void Peer_getRendezvousAddresses(Peer *peer,uint64_t now,InetAddress *v4,InetAdd
 	if (((now - peer->v6Path.lr) < ZT_PEER_PATH_EXPIRATION) && Path_Alive(peer->v6Path.p,now))
 		memcpy(v6, &(peer->v6Path.p->addr),sizeof(InetAddress));
 }
+
+/**
+ * Rate limit gate for VERB_NETWORK_CREDENTIALS
+ */
+bool Peer_rateGateCredentialsReceived(Peer *peer,uint64_t now)
+{
+    if ((now - peer->lastCredentialsReceived) <= ZT_PEER_CREDENTIALS_CUTOFF_TIME)
+        ++peer->credentialsCutoffCount;
+    else peer->credentialsCutoffCount = 0;
+    
+	peer->lastCredentialsReceived = now;       
+    return (peer->directPathPushCutoffCount < ZT_PEER_CREDEITIALS_CUTOFF_LIMIT);   
+}
+
 

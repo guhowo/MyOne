@@ -93,7 +93,6 @@ unsigned long Switch_doTimerTasks(uint64_t now)
 		const unsigned long since = (unsigned long)(now - tmp->whoisReq.lastSent);
 		if (since >= ZT_WHOIS_RETRY_DELAY) {
 			if (tmp->whoisReq.retries >= ZT_MAX_WHOIS_RETRIES) {
-				//outstandingWhoisRequests *tmp=list_entry(pos, outstandingWhoisRequests, list);
 				printf("WHOIS %s timed out\n",Address_ToString(tmp->addr));
 				list_del(&tmp->list);
 				free(tmp);
@@ -205,5 +204,33 @@ bool Switch_shouldUnite(const uint64_t now,const Address source,const Address de
 	}
 
 	return false;
+}
+
+
+void Switch_doAnythingWaitingForPeer(Peer *peer)
+{
+    // cancel pending WHOIS since we now know this peer
+    struct list_head *pos,*n;
+	list_for_each_safe(pos,n,&WhoisRequests.list) {
+        outstandingWhoisRequests *tmp=(outstandingWhoisRequests *)pos;
+        if(tmp->addr==peer->id._address) {
+            Peer *upstream=Topology_getUpstreamPeer((const Address *)0,0,false);
+            if (upstream) {
+        		Buffer outp;
+        		Buffer_Init(&outp);
+        		Packet(&outp,upstream->id._address,RR->identity._address,VERB_WHOIS);
+        		Address_AppendTo(&outp,peer->id._address);
+        		uint64_t packetId=Utils_ntoh_u64(*(uint64_t *)&(outp.b[0]));
+        		expectReplyTo(packetId);
+        		printf("_sendWhoisRequest to upstream %s to ask WHOIS %s in doAnythingWaitingForPeer\n",Address_ToString(upstream->id._address),Address_ToString(peer->id._address));
+        		if(Switch_trySend(&outp,true)) {
+                    list_del(&tmp->list);
+                    free(tmp);
+                }
+	        }
+        }
+    }
+/*+++++++++++++++++++need to do +++++++++++++++++*/    
+    
 }
 
