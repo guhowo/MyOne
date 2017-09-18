@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 遗留问题：<br>
 1 topology.c中生成96位签名时，传进去的ts是何时获取的。     (已经解决)<br>
 2 What's the difference between fcntl(sock, F_SETFL, fcntl(sock, F_GETFL) | O_NONBLOCK) and fcntl(udp_sockd,F_SETFL,O_NONBLOCK)<br>
@@ -45,3 +46,11 @@ To-DO List:
 
 
 
+=======
+To Do List<br>
+1.mutex_lock <br>
+2.multicast threads<br>
+3.tasks lists<br>
+4.unknown
+
+>>>>>>> 438178aa6a6dcadfe7f4e22fa55a4f52cb69d137
