@@ -11,22 +11,22 @@
 // Outstanding WHOIS requests and how many retries they've undergone
 typedef struct _WhoisRequest
 {
-	uint64_t lastSent;
-	Address peersConsulted[ZT_MAX_WHOIS_RETRIES]; // by retry
-	unsigned int retries; // 0..ZT_MAX_WHOIS_RETRIES
+    uint64_t lastSent;
+    Address peersConsulted[ZT_MAX_WHOIS_RETRIES]; // by retry
+    unsigned int retries; // 0..ZT_MAX_WHOIS_RETRIES
 }WhoisRequest;
 
 typedef struct _outstandingWhoisRequests{
-	struct list_head list;
-	Address addr;	//destination ZT Address
-	WhoisRequest whoisReq;
+    struct list_head list;
+    Address addr;    //destination ZT Address
+    WhoisRequest whoisReq;
 }outstandingWhoisRequests;
 
 typedef struct _lastUniteAttempt{
-	struct list_head list;
-	uint64_t ts;
-	Address big;
-	Address little;
+    struct list_head list;
+    uint64_t ts;
+    Address big;
+    Address little;
 }LastUniteAttempt;
 
 void Switch_Init();

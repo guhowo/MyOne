@@ -71,6 +71,11 @@
 #define ZT_PROTO_VERB_MULTICAST_GATHER_IDX_GATHER_LIMIT (ZT_PROTO_VERB_MULTICAST_GATHER_IDX_ADI + 4)
 #define ZT_PROTO_VERB_MULTICAST_GATHER_IDX_COM (ZT_PROTO_VERB_MULTICAST_GATHER_IDX_GATHER_LIMIT + 4)
 
+#define ZT_PUSH_DIRECT_PATHS_FLAG_FORGET_PATH 0x01
+/**
+ * PUSH_DIRECT_PATHS flag: cluster redirect
+ */
+#define ZT_PUSH_DIRECT_PATHS_FLAG_CLUSTER_REDIRECT 0x02
 
 /**
  * Magic number found at ZT_PACKET_FRAGMENT_IDX_FRAGMENT_INDICATOR
@@ -82,20 +87,23 @@
  * Minimum viable packet length (a.k.a. header length)
  */
 #define ZT_PROTO_MIN_PACKET_LENGTH ZT_PACKET_IDX_PAYLOAD
+/**
+ * Verb flag indicating payload is compressed with LZ4
+ */
+#define ZT_PROTO_VERB_FLAG_COMPRESSED 0x80
 
 enum ErrorCode
 {
-	ERROR_NONE = 0x00,
-	ERROR_INVALID_REQUEST = 0x01,
-	ERROR_BAD_PROTOCOL_VERSION = 0x02,
-	ERROR_OBJ_NOT_FOUND = 0x03,
-	ERROR_IDENTITY_COLLISION = 0x04,
-	ERROR_UNSUPPORTED_OPERATION = 0x05,
-	ERROR_NEED_MEMBERSHIP_CERTIFICATE = 0x06,
-	ERROR_NETWORK_ACCESS_DENIED_ = 0x07,
-	ERROR_UNWANTED_MULTICAST = 0x08
+    ERROR_NONE = 0x00,
+    ERROR_INVALID_REQUEST = 0x01,
+    ERROR_BAD_PROTOCOL_VERSION = 0x02,
+    ERROR_OBJ_NOT_FOUND = 0x03,
+    ERROR_IDENTITY_COLLISION = 0x04,
+    ERROR_UNSUPPORTED_OPERATION = 0x05,
+    ERROR_NEED_MEMBERSHIP_CERTIFICATE = 0x06,
+    ERROR_NETWORK_ACCESS_DENIED_ = 0x07,
+    ERROR_UNWANTED_MULTICAST = 0x08
 };
-
 
 const char *verbString(enum Verb v);
 void Packet(Buffer *buf, const Address dest, const Address source, const enum Verb v);
@@ -104,31 +112,33 @@ void sendHELLO(Peer *peer,const InetAddress *localAddr,const InetAddress *atAddr
 bool udpSend(const struct sockaddr *remoteAddress,const Buffer *buf);
 void Packet_Armor(Buffer *buf, const void *key,bool encryptPayload,unsigned int counter);
 bool Packet_Dearmor(Buffer *buf, const void *key);
-void Packet_CryptField(const void *key,unsigned int start,unsigned int len);
+void Packet_cryptField(Buffer *buf,const void *key,unsigned int start,unsigned int len);
 unsigned int Packet_Cipher(unsigned char *data);
 int nodeWirePacketSendFunction(const struct sockaddr_storage *localAddr,const struct sockaddr_storage *addr, const Buffer *buf);
-
+bool Packet_compress(Buffer *outp);
+bool Packet_uncompress(Buffer *outp);
 
 static inline unsigned int hops(unsigned char *data)
 {
-	return ((unsigned int)data[ZT_PACKET_IDX_FLAGS] & 0x07);
+    return ((unsigned int)data[ZT_PACKET_IDX_FLAGS] & 0x07);
 }
 
 static inline unsigned char Packet_incrementHops(unsigned char *data)
 {
-	unsigned char *b = data+ZT_PACKET_IDX_FLAGS;
-	return (*b & 0xf8) | ((*b + 1) & 0x07);
+    unsigned char *b = data+ZT_PACKET_IDX_FLAGS;
+    *b = (*b & 0xf8) | ((*b + 1) & 0x07);
+    return *b;
 }
 
 static inline void Packet_SetCipher(Buffer *buf, unsigned int c)
 {
-	unsigned char b = buf->b[ZT_PACKET_IDX_FLAGS];
-	b = (b & 0xc7) | (unsigned char)((c << 3) & 0x38); // bits: FFCCCHHH
-	// Set DEPRECATED "encrypted" flag -- used by pre-1.0.3 peers
-	if (c == ZT_PROTO_CIPHER_SUITE__C25519_POLY1305_SALSA2012)
-		b |= ZT_PROTO_FLAG_ENCRYPTED;
-	else b &= (~ZT_PROTO_FLAG_ENCRYPTED);
-	buf->b[ZT_PACKET_IDX_FLAGS] = b;
+    unsigned char b = buf->b[ZT_PACKET_IDX_FLAGS];
+    b = (b & 0xc7) | (unsigned char)((c << 3) & 0x38); // bits: FFCCCHHH
+    // Set DEPRECATED "encrypted" flag -- used by pre-1.0.3 peers
+    if (c == ZT_PROTO_CIPHER_SUITE__C25519_POLY1305_SALSA2012)
+        b |= ZT_PROTO_FLAG_ENCRYPTED;
+    else b &= (~ZT_PROTO_FLAG_ENCRYPTED);
+    buf->b[ZT_PACKET_IDX_FLAGS] = b;
 }
 
 

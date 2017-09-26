@@ -5,13 +5,13 @@
 
 typedef struct _NetworkSummaryInfo
 {
-	Address activeBridges[100];
-	int AddressNum;
-	InetAddrList allocatedIps;
-	unsigned long authorizedMemberCount;
-	unsigned long activeMemberCount;
-	unsigned long totalMemberCount;
-	uint64_t mostRecentDeauthTime;
+    Address activeBridges[100];
+    int AddressNum;
+    InetAddrList allocatedIps;
+    unsigned long authorizedMemberCount;
+    unsigned long activeMemberCount;
+    unsigned long totalMemberCount;
+    uint64_t mostRecentDeauthTime;
 }NetworkSummaryInfo;
 
 int Jsondb_load(void);

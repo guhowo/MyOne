@@ -11,17 +11,17 @@
 
 
 typedef struct _Capability{
-	uint64_t nwid;
-	uint64_t ts;
-	uint32_t id;
-	unsigned int maxCustodyChainLength;	
-	unsigned int ruleCount;
-	ZT_VirtualNetworkRule rules[ZT_MAX_CAPABILITY_RULES];
-	struct {
-		Address to;
-		Address from;
-		Signature signature;
-	} custody[ZT_MAX_CAPABILITY_CUSTODY_CHAIN_LENGTH];
+    uint64_t nwid;
+    uint64_t ts;
+    uint32_t id;
+    unsigned int maxCustodyChainLength;    
+    unsigned int ruleCount;
+    ZT_VirtualNetworkRule rules[ZT_MAX_CAPABILITY_RULES];
+    struct {
+        Address to;
+        Address from;
+        Signature signature;
+    } custody[ZT_MAX_CAPABILITY_CUSTODY_CHAIN_LENGTH];
 }Capability;
 
 void Capability_serialize(Buffer *buf,const bool forSign, Capability *cb);
@@ -30,7 +30,7 @@ unsigned int Capability_deserialize(Buffer *buf,unsigned int startAt, Capability
 void Capability_deserializeRules(Buffer *buf, unsigned int *k, ZT_VirtualNetworkRule *rules, unsigned int *rc,const unsigned int maxRuleCount);
 static inline int Capability_compare(const void *a,const void *b)
 {
-	return (((Capability *)a)->id < ((Capability *)b)->id);	
+    return (((Capability *)a)->id < ((Capability *)b)->id);    
 }
 
 #endif

@@ -2116,19 +2116,19 @@ static inline void get_hram(unsigned char *hram, const unsigned char *sm, const 
 
 void C25519_agree(const Private mine,const Public their,void *keybuf,unsigned int keylen)
 {
-	unsigned char rawkey[32];
-	unsigned char digest[64];
-	unsigned int i=0,k=0;
+    unsigned char rawkey[32];
+    unsigned char digest[64];
+    unsigned int i=0,k=0;
 
-	crypto_scalarmult(rawkey,mine,their);
-	SHA512_hash(digest,rawkey,32);
-	for(i=0,k=0;i<keylen;) {
-		if (k == 64) {
-			k = 0;
-			SHA512_hash(digest,digest,64);
-		}
-		((unsigned char *)keybuf)[i++] = digest[k++];
-	}
+    crypto_scalarmult(rawkey,mine,their);
+    SHA512_hash(digest,rawkey,32);
+    for(i=0,k=0;i<keylen;) {
+        if (k == 64) {
+            k = 0;
+            SHA512_hash(digest,digest,64);
+        }
+        ((unsigned char *)keybuf)[i++] = digest[k++];
+    }
 }
 
 void C25519_sign(const Private myPrivate,const Public myPublic,const void *msg,unsigned int len,void *signature)
@@ -2245,9 +2245,9 @@ void C25519_calcPubED(Pair *kp)
 
 void C25519_generate(Pair *kp)
 {
-	getSecureRandom(kp->priv,(unsigned int)sizeof(kp->priv));
-	C25519_calcPubDH(kp);
-	C25519_calcPubED(kp);
-	return;
+    getSecureRandom(kp->priv,(unsigned int)sizeof(kp->priv));
+    C25519_calcPubDH(kp);
+    C25519_calcPubED(kp);
+    return;
 }
 

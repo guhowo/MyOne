@@ -11,8 +11,8 @@
 #define ZT_NETWORKCONFIG_METADATA_DICT_CAPACITY 1024
 
 typedef struct _Dictionary{
-	char b[ZT_NETWORKCONFIG_METADATA_DICT_CAPACITY];
-	unsigned int len;
+    char b[ZT_NETWORKCONFIG_METADATA_DICT_CAPACITY];
+    unsigned int len;
 }Dictionary;
 
 

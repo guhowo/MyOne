@@ -21,23 +21,23 @@
 
 enum Thing
 {
-	THING_NULL = 0,
-	THING_MAC_ADDRESS = 1,
-	THING_IPV4_ADDRESS = 2,
-	THING_IPV6_ADDRESS = 3
+    THING_NULL = 0,
+    THING_MAC_ADDRESS = 1,
+    THING_IPV4_ADDRESS = 2,
+    THING_IPV6_ADDRESS = 3
 };
 
 typedef struct{
-	uint64_t networkId;
-	uint64_t ts;
-	uint64_t flags;
-	uint32_t id;
-	uint16_t thingCount;
-	uint8_t thingTypes[ZT_CERTIFICATEOFOWNERSHIP_MAX_THINGS];
-	uint8_t thingValues[ZT_CERTIFICATEOFOWNERSHIP_MAX_THINGS][ZT_CERTIFICATEOFOWNERSHIP_MAX_THING_VALUE_SIZE];
-	Address issuedTo;
-	Address signedBy;
-	Signature signature;
+    uint64_t networkId;
+    uint64_t ts;
+    uint64_t flags;
+    uint32_t id;
+    uint16_t thingCount;
+    uint8_t thingTypes[ZT_CERTIFICATEOFOWNERSHIP_MAX_THINGS];
+    uint8_t thingValues[ZT_CERTIFICATEOFOWNERSHIP_MAX_THINGS][ZT_CERTIFICATEOFOWNERSHIP_MAX_THING_VALUE_SIZE];
+    Address issuedTo;
+    Address signedBy;
+    Signature signature;
 }CertificateOfOwnership;
 
 void CertificateOfOwnership_serialize(CertificateOfOwnership *coo, Buffer *buf,const bool forSign);

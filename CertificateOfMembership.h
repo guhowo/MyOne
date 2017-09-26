@@ -10,33 +10,33 @@
 
 enum ReservedId
 {
-	/**
-	 * Timestamp of certificate
-	 */
-	COM_RESERVED_ID_TIMESTAMP = 0,
+    /**
+     * Timestamp of certificate
+     */
+    COM_RESERVED_ID_TIMESTAMP = 0,
 
-	/**
-	 * Network ID for which certificate was issued
-	 */
-	COM_RESERVED_ID_NETWORK_ID = 1,
+    /**
+     * Network ID for which certificate was issued
+     */
+    COM_RESERVED_ID_NETWORK_ID = 1,
 
-	/**
-	 * ZeroTier address to whom certificate was issued
-	 */
-	COM_RESERVED_ID_ISSUED_TO = 2
+    /**
+     * ZeroTier address to whom certificate was issued
+     */
+    COM_RESERVED_ID_ISSUED_TO = 2
 };
 
 typedef struct _Qualifier{
-	uint64_t id;
-	uint64_t value;
-	uint64_t maxDelta;
+    uint64_t id;
+    uint64_t value;
+    uint64_t maxDelta;
 }Qualifier;
 
 typedef struct{
-	Address signedBy;
-	Qualifier qualifiers[ZT_NETWORK_COM_MAX_QUALIFIERS];
-	unsigned int qualifierCount;
-	Signature signature;
+    Address signedBy;
+    Qualifier qualifiers[ZT_NETWORK_COM_MAX_QUALIFIERS];
+    unsigned int qualifierCount;
+    Signature signature;
 }CertificateOfMembership;
 
 CertificateOfMembership * CertificateOfMembership_init(void);

@@ -13,31 +13,31 @@
 
 
 enum ncErrorCode {
-	NC_ERROR_NONE = 0,
-	NC_ERROR_OBJECT_NOT_FOUND = 1,
-	NC_ERROR_ACCESS_DENIED = 2,
-	NC_ERROR_INTERNAL_SERVER_ERROR = 3
+    NC_ERROR_NONE = 0,
+    NC_ERROR_OBJECT_NOT_FOUND = 1,
+    NC_ERROR_ACCESS_DENIED = 2,
+    NC_ERROR_INTERNAL_SERVER_ERROR = 3
 };
 
 uint64_t prngState[2];
 
 //controller and JSONDB
 typedef struct _EmbeddedNetworkController{
-	uint64_t startTime;
-	//JSONDB db;
-	char *path;
-	Identity signingId;
-	Networks ctrlr;
+    uint64_t startTime;
+    //JSONDB db;
+    char *path;
+    Identity signingId;
+    Networks ctrlr;
 }NetworkController;
 
 
 //Member Status
 typedef struct {
-	uint64_t lastRequestTime;
-	int vMajor,vMinor,vRev,vProto;
-	Dictionary lastRequestMetaData;
-	Identity identity;
-	InetAddress physicalAddr; // last known physical address
+    uint64_t lastRequestTime;
+    int vMajor,vMinor,vRev,vProto;
+    Dictionary lastRequestMetaData;
+    Identity identity;
+    InetAddress physicalAddr; // last known physical address
 }MemberStatus;
 
 void NetworkController_Init();

@@ -92,13 +92,14 @@ void init(uint64_t _now)
         exit -1;
     }
 
-	Topology_Init();
-	Node_Init();
-	Switch_Init();
+    Topology_Init();
+    Node_Init();
+    Switch_Init();
 
     Jsondb_load();
     NetworkController_Init();
     Multicaster_init();
+    Networks_init();
 }
 
 

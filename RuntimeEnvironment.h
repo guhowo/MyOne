@@ -8,14 +8,14 @@
 #include "Multicaster.h"
 
 typedef struct _RuntimeEnvironment{
-	Identity identity;
-	Topology *pTopology;	
-	TREE *addrTree;
-	TREE *pathsTree;
-	uint64_t now;
+    Identity identity;
+    Topology *pTopology;    
+    TREE *addrTree;
+    TREE *pathsTree;
+    uint64_t now;
 
-	// This is set externally to an instance of this base class
-	NetworkController *localNetworkController;
+    // This is set externally to an instance of this base class
+    NetworkController *localNetworkController;
     Multicaster *mc;
 
 }RuntimeEnvironment;

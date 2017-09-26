@@ -10,9 +10,9 @@ json_h_files=$(shell ls json/*.h)
 json_objects=$(patsubst %.c,%.o,$(json_c_files))
 SUBDIRS=json
 
-ifeq ($(ZT_DEBUG),1)
-    CFLAGS = -g
-endif
+#ifeq ($(ZT_DEBUG),1)
+    CFLAGS = -g -O0
+#endif
 
 all:$(SUBDIRS) $(objects)
 	cc $(CFLAGS) -o one  $(objects) $(json_objects)

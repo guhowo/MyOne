@@ -16,9 +16,9 @@
  * code for deriveAddress() for this algorithm.)
  */
 typedef struct _identity{
-	Address _address;
-	unsigned char _publicKey[64];		//C25519::Public
-	unsigned char _privateKey[64];		//C25519::Private
+    Address _address;
+    unsigned char _publicKey[64];        //C25519::Public
+    unsigned char _privateKey[64];        //C25519::Private
 }Identity;
 
 
@@ -44,7 +44,7 @@ bool Identity_hasPrivate(Identity *id);
  */
 static inline bool Identity_IsEqual(const Identity *ida,const Identity *idb)
 {
-	return ((ida->_address == idb->_address)&&(memcmp(ida->_publicKey, idb->_publicKey, 64)==0));
+    return ((ida->_address == idb->_address)&&(memcmp(ida->_publicKey, idb->_publicKey, 64)==0));
 }
 
 #endif

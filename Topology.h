@@ -16,35 +16,35 @@
 #define ZT_CERTIFICATEOFREPRESENTATION_MAX_ADDRESSES ZT_MAX_UPSTREAMS
 
 typedef struct _upstreamAddress_{
-	struct list_head list;
-	Address addr;
+    struct list_head list;
+    Address addr;
 }upstreamAddress;
 
 typedef struct _MoonsList{
-	struct list_head list;
-	World moon;
+    struct list_head list;
+    World moon;
 }Moons;
 
 typedef struct _Peernode{
-	Address address;
-	Peer peer;
-	Identity id;
-	InetAddrList *pInetAddress;		//readOnly
+    Address address;
+    Peer peer;
+    Identity id;
+    InetAddrList *pInetAddress;        //readOnly
 }PeerNode;
 
 typedef struct _topology{
-	World planet;
-	Moons moons;
-	upstreamAddress upstreamAddresses;
-	bool amRoot;
+    World planet;
+    Moons moons;
+    upstreamAddress upstreamAddresses;
+    bool amRoot;
 }Topology;
 
 
 typedef struct _CertificateOfRepresentation{
-	Address reps[ZT_CERTIFICATEOFREPRESENTATION_MAX_ADDRESSES];
-	unsigned int repCount;
-	uint64_t _timestamp;
-	Signature _signature;
+    Address reps[ZT_CERTIFICATEOFREPRESENTATION_MAX_ADDRESSES];
+    unsigned int repCount;
+    uint64_t _timestamp;
+    Signature _signature;
 }CertificateOfRepresentation;
 
 void Topology_Init(void);
@@ -64,5 +64,6 @@ bool Topology_IsInUpstreams(const Address *addr);
 Identity *Topology_getIdentity(Address zta);
 Peer *Topology_getUpstreamPeer(const Address *avoid,unsigned int avoidCount,bool strictAvoid);
 bool Topology_isProhibitedEndpoint(const Address ztaddr,const InetAddress *ipaddr);
+bool findUpstream(Address addr);
 
 #endif

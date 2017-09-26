@@ -22,8 +22,8 @@ typedef unsigned char Signature[ZT_C25519_SIGNATURE_LEN];
  * Public/private key pair
  */
 typedef struct {
-	Public pub;
-	Private priv;
+    Public pub;
+    Private priv;
 } Pair;
 
 void C25519_generate(Pair *kp);
@@ -75,13 +75,13 @@ void C25519_sign(const Private myPrivate,const Public myPublic,const void *msg,u
  */
 static inline void C25519_sign4(Signature sig, const Private myPrivate,const Public myPublic,const void *msg,unsigned int len)
 {
-	C25519_sign(myPrivate,myPublic,msg,len,sig);
-	return ;
+    C25519_sign(myPrivate,myPublic,msg,len,sig);
+    return ;
 }
 static inline void C25519_sign3(Signature sig,const Pair *mine,const void *msg,unsigned int len)
 {
-	C25519_sign(mine->priv,mine->pub,msg,len,sig);
-	return ;
+    C25519_sign(mine->priv,mine->pub,msg,len,sig);
+    return ;
 }
 
 /**
@@ -96,13 +96,13 @@ static inline void C25519_sign3(Signature sig,const Pair *mine,const void *msg,u
 int C25519_verify(const Public their,const void *msg,unsigned int len,const void *signature);
 static inline bool C25519_has_PrivateKey(const Private key)
 {
-	unsigned char k[ZT_C25519_PRIVATE_KEY_LEN];
+    unsigned char k[ZT_C25519_PRIVATE_KEY_LEN];
 
-	memset(k, 0, ZT_C25519_PRIVATE_KEY_LEN);
-	if(!memcmp(key, k, ZT_C25519_PRIVATE_KEY_LEN)){
-		return false;
-	}
-	return true;
+    memset(k, 0, ZT_C25519_PRIVATE_KEY_LEN);
+    if(!memcmp(key, k, ZT_C25519_PRIVATE_KEY_LEN)){
+        return false;
+    }
+    return true;
 }
 
 #endif
