@@ -65,5 +65,6 @@ Identity *Topology_getIdentity(Address zta);
 Peer *Topology_getUpstreamPeer(const Address *avoid,unsigned int avoidCount,bool strictAvoid);
 bool Topology_isProhibitedEndpoint(const Address ztaddr,const InetAddress *ipaddr);
 bool findUpstream(Address addr);
+void Topology_clean(void);
 
 #endif

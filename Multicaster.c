@@ -39,7 +39,7 @@ void multicaster_add(uint64_t now, uint64_t nwid, const MulticastGroup *mg, Mult
         return;
     }
     if(gs->membersNum >= 256){
-        printf("too manry members\n");
+        printf("too many members\n");
         return;
     }
 
@@ -259,5 +259,43 @@ restart_member_scan:
     setAt(appendTo,addedAt,(uint16_t)added);
 
     return added;
+}
+
+void Multicaster_clean(void)
+{
+    GroupList *gp=&(mc.groups);
+    GatherAuthList *ga=&(mc.gatherAuth);
+
+    //flush groups
+    struct list_head *pos,*n;
+    list_for_each_safe(pos,n,&gp->list) {
+        GroupList *tmp=(GroupList *)pos;
+        unsigned int i=0;
+        while(i<tmp->gs.membersNum) {
+            const unsigned long since = (unsigned long)(RR->now - tmp->gs.members[i].timestamp);
+            if(since > ZT_MULTICAST_LIKE_EXPIRE) {
+                printf("Multicaster_remove a member, address = %s\n",Address_ToString(tmp->gs.members[i].address));
+                Multicaster_remove(tmp->Key.nwid,&(tmp->Key.mg),&(tmp->gs.members[i].address));
+            }
+            else
+                i++;
+        }
+        
+        if(tmp->gs.membersNum == 0) {   //no member in this node
+            list_del(&tmp->list);
+            free(tmp);
+        }
+    }
+
+    //flush gatherAuth
+    list_for_each_safe(pos,n,&ga->list) {
+        GatherAuthList *tmp=(GatherAuthList *)pos;
+        const unsigned long since = (unsigned long)(RR->now - tmp->ga);
+        if(since > ZT_MULTICAST_CREDENTIAL_EXPIRATON) {
+            list_del(&tmp->list);
+            free(tmp);
+        }
+    }
+    
 }
 

@@ -260,12 +260,15 @@ bool Peer_hasActivePathTo(Peer *peer, uint64_t now,const InetAddress *addr)
  */
 void Peer_setClusterPreferred(Peer * peer, const InetAddress *addr)
 {
-/*
-    if (addr->address.ss_family == AF_INET)
-        _v4ClusterPreferred = addr;
-    else if (addr.ss_family == AF_INET6)
-        _v6ClusterPreferred = addr;
-*/
+    return;
+}
+
+/**
+ * @return True if we've heard from this peer in less than ZT_PEER_ACTIVITY_TIMEOUT
+ */
+bool Peer_isAlive(const Peer *peer) 
+{
+    return ((RR->now - peer->lastReceive) < ZT_PEER_ACTIVITY_TIMEOUT); 
 }
 
 

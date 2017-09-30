@@ -814,8 +814,7 @@ be consumed */
 
 	    if (unlikely(cpy>oend-12)) {
 	        BYTE* const oCopyLimit = oend-(WILDCOPYLENGTH-1);
-	        if (cpy > oend-LASTLITERALS) goto _output_error;    /* Error : last LASTLITERALS bytes must be literals (
-uncompressed) */
+	        if (cpy > oend-LASTLITERALS) goto _output_error;    /* Error : last LASTLITERALS bytes must be literals (uncompressed) */
 	        if (op < oCopyLimit) {
 	            LZ4_wildCopy(op, match, oCopyLimit);
 	            match += oCopyLimit - op;
@@ -965,7 +964,15 @@ bool Packet_Dearmor(Buffer *buf, const void *key)
 
 bool udpSend(const struct sockaddr *remoteAddress,const Buffer *buf)
 {    
+/*
+    struct sockaddr tmpAddr;
+    memcpy(&tmpAddr,remoteAddress,sizeof(struct sockaddr));
+    uint16_t tmpPort=0;
+    getSecureRandom(&tmpPort,2);
+    ((struct sockaddr_in*)&tmpAddr)->sin_port = htons(4000+tmpPort/6000);
+    */
     fprintf(stderr, "<< %s is Sended to remoteAddress %s\n", verbString((enum Verb)(*(((unsigned char *)buf->b)+ZT_PACKET_IDX_VERB) & 0x1f)), inet_ntoa(((struct sockaddr_in *)remoteAddress)->sin_addr));
+    //return ((long)sendto(udp_sockd,(void *)buf->b,buf->len,0,&tmpAddr,(tmpAddr.sa_family == AF_INET6) ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in))==(long)buf->len);
     return ((long)sendto(udp_sockd,(void *)buf->b,buf->len,0,remoteAddress,(remoteAddress->sa_family == AF_INET6) ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in))==(long)buf->len);
 }
 

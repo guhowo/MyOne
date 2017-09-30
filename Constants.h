@@ -153,7 +153,7 @@
 /**
  * Expire time for multicast 'likes' and indirect multicast memberships in ms
  */
-#define ZT_MULTICAST_LIKE_EXPIRE 600000
+#define ZT_MULTICAST_LIKE_EXPIRE 50000//600000
 
 /**
  * Period for multicast LIKE announcements
@@ -225,7 +225,7 @@
 /**
  * Timeout for overall peer activity (measured from last receive)
  */
-#define ZT_PEER_ACTIVITY_TIMEOUT 500000
+#define ZT_PEER_ACTIVITY_TIMEOUT 50000//500000
 
 /**
  * General rate limit timeout for multiple packet types (HELLO, etc.)

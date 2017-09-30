@@ -70,7 +70,7 @@ NetworkController.o:NetworkController.c list.h ./json/json.h NetworkController.h
 	cc $(CFLAGS) -c $^ -I./json
 IncomingPacket.o:IncomingPacket.c IncomingPacket.h Version.h Path.h Network.h
 	cc $(CFLAGS) -c $^
-background.o:background.c list.h RuntimeEnvironment.h Utils.h InetAddress.h Identity.h World.h Topology.h Packet.h background.h
+background.o:background.c list.h RuntimeEnvironment.h Utils.h InetAddress.h Identity.h World.h Topology.h Multicaster.h Packet.h background.h
 	cc $(CFLAGS) -c $^
 one.o:one.c avl_local.h Utils.h Address.h Identity.h RuntimeEnvironment.h Topology.h IncomingPacket.h Path.h
 	cc $(CFLAGS) -c $^

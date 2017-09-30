@@ -64,6 +64,7 @@ void Peer_getRendezvousAddresses(Peer *peer,uint64_t now,InetAddress *v4,InetAdd
 bool Peer_hasActivePathTo(Peer *peer, uint64_t now,const InetAddress *addr);
 void Peer_setClusterPreferred(Peer * peer, const InetAddress *addr);
 bool Peer_rateGateCredentialsReceived(Peer *peer,uint64_t now);
+bool Peer_isAlive(const Peer *peer);
 
 #endif
 

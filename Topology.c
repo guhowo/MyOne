@@ -398,4 +398,20 @@ bool Topology_isProhibitedEndpoint(const Address ztaddr,const InetAddress *ipadd
     return false;
 }
 
+bool _checkNode(void *node)
+{
+    Peer *p=&((PeerNode *)node)->peer;
+   if(!Peer_isAlive(p) && !findUpstream(p->id._address)) {
+        printf("removing node, address = %s\n",Address_ToString(p->id._address));
+        avl_remove(RR->addrTree, node);
+   }
+   
+   return 0;
+}
+
+void Topology_clean(void)
+{
+    avl_scan(RR->addrTree, _checkNode);
+}
+
 

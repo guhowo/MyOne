@@ -11,8 +11,10 @@
 #include "RuntimeEnvironment.h"
 #include "Switch.h"
 #include "Constants.h"
+#include "Multicaster.h"
 
 static uint64_t lastPingCheck = 0;
+static uint64_t lastHousekeepingRun = 0;
 extern RuntimeEnvironment *RR;
 
 enum ZT_ResultCode processBackgroundTasks(void *tptr,uint64_t _now,volatile uint64_t *nextBackgroundTaskDeadline)
@@ -43,12 +45,17 @@ enum ZT_ResultCode processBackgroundTasks(void *tptr,uint64_t _now,volatile uint
         }
         // Run WHOIS to create Peer for any upstreams we could not contact (including pending moon seeds)
         // WHOIS works only in controller, not in Planet
-        
     }else {
         timeUntilNextPingCheck -= (unsigned long)timeSinceLastPingCheck;
     }
 
-    *nextBackgroundTaskDeadline = _now +MAX(MIN(timeUntilNextPingCheck,Switch_doTimerTasks(_now)),(unsigned long)ZT_CORE_TIMER_TASK_GRANULARITY);
+    if ((_now - lastHousekeepingRun) >= ZT_HOUSEKEEPING_PERIOD) {
+        lastHousekeepingRun = _now;
+        Topology_clean();   //flush peer tree
+        Multicaster_clean();    //flush mg
+    }
+    
+    *nextBackgroundTaskDeadline = _now + MAX(MIN(timeUntilNextPingCheck,Switch_doTimerTasks(_now)),(unsigned long)ZT_CORE_TIMER_TASK_GRANULARITY);
     
     return ZT_RESULT_OK;
 }

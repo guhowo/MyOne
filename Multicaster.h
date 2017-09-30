@@ -66,5 +66,6 @@ bool Multicaster_cacheAuthorized(Address a, uint64_t nwid, uint64_t now);
 void Multicaster_add(uint64_t now, uint64_t nwid, const MulticastGroup *mg, Address member);
 void Multicaster_addCredential(CertificateOfMembership *com,bool alreadyValidated);
 unsigned int Multicaster_gather(const Address queryingPeer,uint64_t nwid,const MulticastGroup *mg,Buffer *appendTo,unsigned int limit);
+void Multicaster_clean();
 
 #endif
